@@ -1,65 +1,73 @@
 import React from 'react';
+
 import MovieCard from './MovieCard';
 
-import dummyPoster from '../../assets/Poster1.jpg';
+function MovieGrid({ movies = [] }) {
 
-function MovieGrid() {
+  const movieResults = movies
+    .filter((movie) => movie.media_type === 'movie')
+    .slice(0, 6);
 
-  const movies = [
-    {
-      id: 1,
-      title: "Dune: Part Two",
-      year: "2024",
-      rating: "8.7",
-      type: "Movie",
-      poster: dummyPoster
-    },
-
-    {
-      id: 2,
-      title: "Interstellar",
-      year: "2014",
-      rating: "8.7",
-      type: "Movie",
-      poster: dummyPoster
-    },
-
-    {
-      id: 3,
-      title: "Stranger Things",
-      year: "2016",
-      rating: "8.6",
-      type: "Series",
-      poster: dummyPoster
-    },
-
-    {
-      id: 4,
-      title: "The Batman",
-      year: "2022",
-      rating: "7.8",
-      type: "Movie",
-      poster: dummyPoster
-    }
-  ];
+  if (movieResults.length === 0) {
+    return (
+      <section className="container mx-auto px-6 py-10">
+        <p className="text-sm text-[#93939A]">
+          No trending movies available.
+        </p>
+      </section>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-5">
+    <section className="container mx-auto px-6 py-10">
 
-      {movies.map((movie) => {
-        return (
+      {/* SECTION HEADER */}
+      <div className="mb-6 flex items-end justify-between">
+
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#93939A]">
+            What's trending
+          </p>
+
+          <h2 className="text-2xl font-bold text-[#F4F4F5] sm:text-3xl">
+            Trending Movies
+          </h2>
+        </div>
+
+      </div>
+
+      {/* MOVIE GRID */}
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+
+        {movieResults.map((movie) => (
+
           <MovieCard
             key={movie.id}
+            id={movie.id}
             title={movie.title}
-            year={movie.year}
-            rating={movie.rating}
-            type={movie.type}
-            poster={movie.poster}
+            year={
+              movie.release_date
+                ? movie.release_date.slice(0, 4)
+                : 'N/A'
+            }
+            rating={
+              movie.vote_average
+                ? movie.vote_average.toFixed(1)
+                : 'N/A'
+            }
+            type="Movie"
+            poster={
+              movie.poster_path
+                ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                : '/dummyPoster.png'
+            }
           />
-        );
-      })}
 
-    </div>
+        ))}
+
+      </div>
+
+    </section>
   );
 }
 

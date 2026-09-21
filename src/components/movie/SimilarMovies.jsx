@@ -1,88 +1,120 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import MovieCard from './MovieCard';
+import { getSimilarMovies } from '../../services/tmdb';
 
-import dummyPoster from '../../assets/Poster1.jpg';
+function SimilarMovies({ movieId }) {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-function SimilarMovies() {
+  useEffect(() => {
+    async function fetchSimilarMovies() {
+      try {
+        setLoading(true);
 
-  const movies = [
-    {
-      id: 1,
-      title: 'Forgotten',
-      year: '2017',
-      rating: '7.4',
-      type: 'Movie',
-      poster: dummyPoster
-    },
-    {
-      id: 2,
-      title: 'Burning',
-      year: '2018',
-      rating: '7.5',
-      type: 'Movie',
-      poster: dummyPoster
-    },
-    {
-      id: 3,
-      title: 'Parasite',
-      year: '2019',
-      rating: '8.5',
-      type: 'Movie',
-      poster: dummyPoster
-    },
-    {
-      id: 4,
-      title: 'The Wailing',
-      year: '2016',
-      rating: '7.4',
-      type: 'Movie',
-      poster: dummyPoster
-    },
-    {
-      id: 5,
-      title: 'Decision to Leave',
-      year: '2022',
-      rating: '7.3',
-      type: 'Movie',
-      poster: dummyPoster
-    },
-    {
-      id: 6,
-      title: 'Midnight',
-      year: '2021',
-      rating: '6.4',
-      type: 'Movie',
-      poster: dummyPoster
+        const data = await getSimilarMovies(movieId);
+
+        setMovies(data.results || []);
+      } catch (error) {
+        console.error(
+          'TMDB SIMILAR MOVIES ERROR:',
+          error
+        );
+
+        setMovies([]);
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+
+    if (movieId) {
+      fetchSimilarMovies();
+    }
+  }, [movieId]);
+
+  if (loading) {
+    return (
+      <section className="container mx-auto px-6 pb-16">
+
+        <div className="mb-6">
+          <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
+            Discover
+          </p>
+
+          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
+            Similar Movies
+          </h2>
+        </div>
+
+        <p className="text-sm text-[#93939A]">
+          Loading similar movies...
+        </p>
+
+      </section>
+    );
+  }
+
+  if (movies.length === 0) {
+    return null;
+  }
 
   return (
     <section className="container mx-auto px-6 pb-16">
 
-      {/* SECTION HEADER */}
+      {/* HEADER */}
+
       <div className="mb-6">
+
         <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
-          You might also like
+          Discover
         </p>
 
-        <h2 className="mt-2 text-2xl font-bold sm:text-3xl text-[#F4F4F5]">
-          Similar Films
+        <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
+          Similar Movies
         </h2>
+
       </div>
 
-      {/* MOVIE GRID */}
-      <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
 
-        {movies.map((movie) => (
-          <MovieCard
+      {/* MOVIES */}
+
+      <div
+        className="flex gap-5 overflow-x-auto pb-3
+                   [scrollbar-width:none]
+                   [-ms-overflow-style:none]
+                   [&::-webkit-scrollbar]:hidden"
+      >
+
+        {movies.slice(0, 10).map((movie) => (
+
+          <div
             key={movie.id}
-            title={movie.title}
-            year={movie.year}
-            rating={movie.rating}
-            type={movie.type}
-            poster={movie.poster}
-          />
+            className="w-[160px] shrink-0 sm:w-[180px] md:w-[200px]"
+          >
+
+            <MovieCard
+              id={movie.id}
+              title={movie.title}
+              year={
+                movie.release_date
+                  ? movie.release_date.slice(0, 4)
+                  : 'N/A'
+              }
+              rating={
+                movie.vote_average
+                  ? movie.vote_average.toFixed(1)
+                  : 'N/A'
+              }
+              poster={
+                movie.poster_path
+                  ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+                  : '/dummyPoster.png'
+              }
+              type="Movie"
+            />
+
+          </div>
+
         ))}
 
       </div>

@@ -3,15 +3,48 @@ import 'remixicon/fonts/remixicon.css';
 
 import dummyPoster from '../../assets/Poster1.jpg';
 
-function ReviewModal({ isOpen, onClose }) {
+import {
+  getReviews,
+  saveReviews,
+} from '../../utils/sceneitStorage';
+
+function ReviewModal({
+  isOpen,
+  onClose,
+  movie,
+  onPublish,
+}) {
   const [rating, setRating] = React.useState(0);
-  const [reviewDate, setReviewDate] = React.useState('2026-09-13');
-  const [watched, setWatched] = React.useState(true);
+  const [reviewDate, setReviewDate] = React.useState('');
   const [reviewText, setReviewText] = React.useState('');
-  const [containsSpoiler, setContainsSpoiler] = React.useState(false);
-  const [errorMessage, setErrorMessage] = React.useState('');
+  const [liked, setLiked] = React.useState(false);
+  const [containsSpoiler, setContainsSpoiler] =
+    React.useState(false);
+  const [errorMessage, setErrorMessage] =
+    React.useState('');
 
   const dateInputRef = React.useRef(null);
+
+  // =========================
+  // RESET WHEN MODAL OPENS
+  // =========================
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setRating(0);
+      setReviewDate(
+        new Date().toISOString().split('T')[0]
+      );
+      setReviewText('');
+      setLiked(false);
+      setContainsSpoiler(false);
+      setErrorMessage('');
+    }
+  }, [isOpen, movie?.id]);
+
+  // =========================
+  // OPEN DATE PICKER
+  // =========================
 
   const openDatePicker = () => {
     if (dateInputRef.current?.showPicker) {
@@ -21,28 +54,94 @@ function ReviewModal({ isOpen, onClose }) {
     }
   };
 
+  // =========================
+  // PUBLISH REVIEW
+  // =========================
+
   const handlePublish = () => {
+
     if (!reviewDate) {
-        setErrorMessage('Please select a review date.');
-        return;
+      setErrorMessage(
+        'Please select a review date.'
+      );
+      return;
     }
-  
-  if (rating === 0) {
-    setErrorMessage('Please give this film a rating.');
-    return;
-  }
 
-  if (reviewText.trim() === '') {
-    setErrorMessage('Please write your review.');
-    return;
-  }
+    if (rating === 0) {
+      setErrorMessage(
+        'Please give this title a rating.'
+      );
+      return;
+    }
 
-  setErrorMessage('');
-  onClose();
-};
+    if (reviewText.trim() === '') {
+      setErrorMessage(
+        'Please write your review.'
+      );
+      return;
+    }
 
+    setErrorMessage('');
 
-  if (!isOpen) {
+    // =========================
+    // CREATE REVIEW
+    // =========================
+
+    const newReview = {
+      id: Date.now(),
+
+      movieId: movie.id,
+
+      title: movie.title,
+
+      type: movie.type,
+
+      rating,
+
+      reviewDate,
+
+      reviewText: reviewText.trim(),
+
+      liked,
+
+      containsSpoiler,
+
+      poster: movie.poster || null,
+    };
+
+    // =========================
+    // GET EXISTING REVIEWS
+    // =========================
+
+    const savedReviews = getReviews();
+
+    // =========================
+    // SAVE NEW REVIEW
+    // =========================
+
+    const updatedReviews = [
+      newReview,
+      ...savedReviews,
+    ];
+
+    saveReviews(updatedReviews);
+
+    // =========================
+    // SEND REVIEW TO PARENT
+    // =========================
+
+    if (onPublish) {
+      onPublish(newReview);
+    }
+
+    // =========================
+    // CLOSE MODAL
+    // =========================
+
+    onClose();
+  };
+
+  if (!isOpen || !movie) {
     return null;
   }
 
@@ -51,8 +150,12 @@ function ReviewModal({ isOpen, onClose }) {
 
       <div className="relative w-full max-w-3xl rounded-2xl bg-[#F4F4F5] p-6 text-[#090A0F] shadow-2xl">
 
-        {/* Close Button */}
+        {/* =========================
+            CLOSE
+        ========================= */}
+
         <button
+          type="button"
           onClick={onClose}
           className="absolute right-5 top-5 text-[#71717A] transition-colors hover:text-[#090A0F]"
           aria-label="Close review modal"
@@ -60,56 +163,66 @@ function ReviewModal({ isOpen, onClose }) {
           <i className="ri-close-line text-2xl"></i>
         </button>
 
+        {/* =========================
+            HEADER
+        ========================= */}
 
-        {/* Header */}
         <div className="pr-10">
+
           <h2 className="text-2xl font-bold">
             Write a Review
           </h2>
 
           <p className="mt-1 text-sm text-[#71717A]">
-            Share your thoughts about this film.
+            Share your thoughts about this title.
           </p>
+
         </div>
 
+        {/* =========================
+            TITLE INFO
+        ========================= */}
 
-        {/* Movie Information */}
         <div className="mt-6 flex gap-4">
 
-          {/* Poster */}
+          {/* POSTER */}
+
           <div className="w-20 flex-shrink-0">
+
             <div className="aspect-[2/3] overflow-hidden rounded-lg bg-[#E4E4E7]">
+
               <img
-                src={dummyPoster}
-                alt="The Call"
+                src={movie.poster || dummyPoster}
+                alt={movie.title}
                 className="h-full w-full object-cover"
               />
+
             </div>
+
           </div>
 
+          {/* TITLE DETAILS */}
 
-          {/* Movie Details */}
           <div className="min-w-0 flex-1">
 
-            {/* Title */}
             <h3 className="text-lg font-bold">
-              The Call{' '}
+
+              {movie.title}{' '}
+
               <span className="font-normal text-[#71717A]">
-                (2020)
+                ({movie.year})
               </span>
+
             </h3>
 
-
-            {/* Genre */}
             <p className="mt-1 text-sm text-[#71717A]">
-              Thriller
+              {movie.type}
             </p>
 
+            {/* DATE + LIKE */}
 
-            {/* Date + Watched */}
-            <div className="mt-2 flex flex-wrap items-center gap-1">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
 
-              {/* Review Date */}
               <div className="flex items-center gap-1.5 py-1">
 
                 <button
@@ -125,52 +238,62 @@ function ReviewModal({ isOpen, onClose }) {
                   ref={dateInputRef}
                   type="date"
                   value={reviewDate}
-                  onChange={(e) => {setReviewDate(e.target.value)
-                    setErrorMessage('');}
-                  }
+                  onChange={(event) => {
+                    setReviewDate(
+                      event.target.value
+                    );
+                    setErrorMessage('');
+                  }}
                   className="w-[75px] cursor-pointer bg-transparent p-0 text-xs text-[#71717A] outline-none [&::-webkit-calendar-picker-indicator]:hidden"
                 />
 
               </div>
 
-
-              {/* Watched */}
               <button
                 type="button"
-                onClick={() => setWatched(!watched)}
+                onClick={() => {
+                  setLiked(!liked);
+                }}
                 className={`flex items-center gap-1.5 py-1 text-xs transition-colors ${
-                  watched
+                  liked
                     ? 'text-[#090A0F]'
-                    : 'text-[#A1A1AA] hover:text-[#090A0F]'
+                    : 'text-[#71717A] hover:text-[#090A0F]'
                 }`}
               >
+
                 <i
                   className={`${
-                    watched
-                      ? 'ri-checkbox-circle-fill text-[#090A0F]'
-                      : 'ri-checkbox-blank-circle-line'
+                    liked
+                      ? 'ri-heart-fill'
+                      : 'ri-heart-line'
                   } text-sm`}
                 ></i>
 
-                <span>Watched</span>
+                <span>
+                  Like
+                </span>
+
               </button>
 
             </div>
 
+            {/* RATING */}
 
-            {/* Rating */}
             <div className="mt-2 flex items-center gap-0.5">
 
               {[1, 2, 3, 4, 5].map((star) => (
+
                 <button
                   key={star}
                   type="button"
-                  onClick={() => {setRating(star)
+                  onClick={() => {
+                    setRating(star);
                     setErrorMessage('');
                   }}
                   className="p-0.5 transition-transform hover:scale-110"
                   aria-label={`Rate ${star} out of 5`}
                 >
+
                   <i
                     className={`${
                       star <= rating
@@ -178,49 +301,64 @@ function ReviewModal({ isOpen, onClose }) {
                         : 'ri-star-line text-[#A1A1AA]'
                     } text-xl`}
                   ></i>
+
                 </button>
+
               ))}
 
             </div>
 
           </div>
+
         </div>
 
+        {/* =========================
+            REVIEW TEXT
+        ========================= */}
 
-        {/* Review Text */}
         <div className="mt-5 w-full">
 
           <textarea
             rows="5"
             value={reviewText}
-            onChange={(e) => {
-                setReviewText(e.target.value)
-                setErrorMessage('');
+            onChange={(event) => {
+              setReviewText(
+                event.target.value
+              );
+              setErrorMessage('');
             }}
-            placeholder="Write your thoughts about this film..."
+            placeholder="Write your thoughts about this title..."
             className="block w-full resize-none rounded-xl border border-[#D4D4D8] bg-white p-4 text-sm leading-6 text-[#090A0F] outline-none transition-colors placeholder:text-[#A1A1AA] focus:border-[#090A0F]"
           />
 
         </div>
 
+        {/* =========================
+            ERROR
+        ========================= */}
+
         {errorMessage && (
-            <p className="mt-3 text-xs text-red-500">
-                {errorMessage}
-                </p>
-            )
-            }
+          <p className="mt-3 text-xs text-red-500">
+            {errorMessage}
+          </p>
+        )}
 
+        {/* =========================
+            FOOTER
+        ========================= */}
 
-        {/* Footer */}
         <div className="mt-4 flex items-center justify-between border-t border-[#E4E4E7] pt-4">
 
-          {/* Spoiler Checkbox */}
           <label className="flex cursor-pointer items-center gap-2 text-sm text-[#71717A] transition-colors hover:text-[#090A0F]">
 
             <input
               type="checkbox"
               checked={containsSpoiler}
-              onChange={(e) => setContainsSpoiler(e.target.checked)}
+              onChange={(event) => {
+                setContainsSpoiler(
+                  event.target.checked
+                );
+              }}
               className="h-4 w-4 cursor-pointer rounded border-[#D4D4D8] accent-[#090A0F]"
             />
 
@@ -230,8 +368,6 @@ function ReviewModal({ isOpen, onClose }) {
 
           </label>
 
-
-          {/* Publish */}
           <button
             type="button"
             onClick={handlePublish}
@@ -243,6 +379,7 @@ function ReviewModal({ isOpen, onClose }) {
         </div>
 
       </div>
+
     </div>
   );
 }

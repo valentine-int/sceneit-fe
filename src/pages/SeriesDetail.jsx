@@ -5,13 +5,13 @@ import 'remixicon/fonts/remixicon.css';
 import Button from '../components/common/Button';
 import Badge from '../components/common/Badge';
 import PopularReviews from '../components/review/PopularReviews';
-import SimilarMovies from '../components/movie/SimilarMovies';
+import SimilarSeries from '../components/movie/SimilarSeries';
 import ReviewModal from '../components/review/ReviewModal';
 
 import profile from '../assets/profile.jpg';
 import dummyPoster from '../assets/Poster1.jpg';
 
-import useMovieDetail from '../hooks/useMovieDetail';
+import useSeriesDetail from '../hooks/useSeriesDetail';
 
 import {
   getReviews,
@@ -23,14 +23,14 @@ import {
   saveFavorites,
 } from '../utils/sceneitStorage';
 
-function MovieDetail() {
+function SeriesDetail() {
   const { id } = useParams();
 
   const {
     data,
     loading,
     error,
-  } = useMovieDetail(id);
+  } = useSeriesDetail(id);
 
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [isWatched, setIsWatched] = useState(false);
@@ -38,26 +38,27 @@ function MovieDetail() {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
   const [reviews, setReviews] = useState([]);
-  const movie = data?.movie;
+
+  const series = data?.series;
   const cast = data?.cast || [];
 
 
   useEffect(() => {
   const loadReviews = () => {
-    if (!movie?.id) return;
-
     const savedReviews = getReviews();
 
-    const movieReviews = savedReviews.filter(
+    const seriesReviews = savedReviews.filter(
       (review) =>
-        Number(review.movieId) === Number(movie.id) &&
-        review.type === 'Movie'
+        Number(review.movieId) === Number(series.id) &&
+        review.type === 'Series'
     );
 
-    setReviews(movieReviews);
+    setReviews(seriesReviews);
   };
 
-  loadReviews();
+  if (series?.id) {
+    loadReviews();
+  }
 
   window.addEventListener(
     'sceneit-storage',
@@ -70,34 +71,39 @@ function MovieDetail() {
       loadReviews
     );
   };
-}, [movie?.id]);
-
+}, [series?.id]);
 
   // =========================
-  // MOVIE INFORMATION
+  // SERIES INFORMATION
   // =========================
 
   const releaseYear =
-    movie?.release_date
-      ? movie.release_date.slice(0, 4)
+    series?.first_air_date
+      ? series.first_air_date.slice(0, 4)
       : 'N/A';
 
   const rating =
-    movie?.vote_average
-      ? movie.vote_average.toFixed(1)
+    series?.vote_average
+      ? series.vote_average.toFixed(1)
       : 'N/A';
 
   const genre =
-    movie?.genres?.[0]?.name || 'N/A';
+    series?.genres?.[0]?.name || 'N/A';
+
+  const seasons =
+    series?.number_of_seasons || 0;
+
+  const episodes =
+    series?.number_of_episodes || 0;
 
   const duration =
-    movie?.runtime
-      ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
+    series?.episode_run_time?.length
+      ? `${series.episode_run_time[0]}m / episode`
       : 'N/A';
 
   const poster =
-    movie?.poster_path
-      ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+    series?.poster_path
+      ? `https://image.tmdb.org/t/p/w500${series.poster_path}`
       : dummyPoster;
 
   // =========================
@@ -105,7 +111,7 @@ function MovieDetail() {
   // =========================
 
   useEffect(() => {
-    if (!movie) return;
+    if (!series) return;
 
     const savedWatchlist = getWatchlist();
     const savedWatched = getWatched();
@@ -113,50 +119,49 @@ function MovieDetail() {
 
     const alreadyWatchlisted = savedWatchlist.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     const alreadyWatched = savedWatched.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     const alreadyFavorite = savedFavorites.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     setIsWatchlisted(alreadyWatchlisted);
     setIsWatched(alreadyWatched);
     setIsLiked(alreadyFavorite);
-  }, [movie]);
+  }, [series]);
 
   // =========================
   // WATCHLIST
   // =========================
 
   const handleWatchlist = () => {
-    if (!movie) return;
+    if (!series) return;
 
     const savedWatchlist = getWatchlist();
 
     const alreadyExists = savedWatchlist.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     if (alreadyExists) {
-
       const updatedWatchlist =
         savedWatchlist.filter(
           (item) =>
             !(
-              item.id === movie.id &&
-              item.type === 'Movie'
+              item.id === series.id &&
+              item.type === 'Series'
             )
         );
 
@@ -167,18 +172,18 @@ function MovieDetail() {
       return;
     }
 
-    const movieToSave = {
-      id: movie.id,
-      title: movie.title,
+    const seriesToSave = {
+      id: series.id,
+      title: series.name,
       year: releaseYear,
       rating,
-      type: 'Movie',
+      type: 'Series',
       poster,
     };
 
     const updatedWatchlist = [
       ...savedWatchlist,
-      movieToSave,
+      seriesToSave,
     ];
 
     saveWatchlist(updatedWatchlist);
@@ -191,24 +196,23 @@ function MovieDetail() {
   // =========================
 
   const handleWatched = () => {
-    if (!movie) return;
+    if (!series) return;
 
     const savedWatched = getWatched();
 
     const alreadyExists = savedWatched.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     if (alreadyExists) {
-
       const updatedWatched =
         savedWatched.filter(
           (item) =>
             !(
-              item.id === movie.id &&
-              item.type === 'Movie'
+              item.id === series.id &&
+              item.type === 'Series'
             )
         );
 
@@ -219,18 +223,18 @@ function MovieDetail() {
       return;
     }
 
-    const movieToSave = {
-      id: movie.id,
-      title: movie.title,
+    const seriesToSave = {
+      id: series.id,
+      title: series.name,
       year: releaseYear,
       rating,
-      type: 'Movie',
+      type: 'Series',
       poster,
     };
 
     const updatedWatched = [
       ...savedWatched,
-      movieToSave,
+      seriesToSave,
     ];
 
     saveWatched(updatedWatched);
@@ -243,24 +247,23 @@ function MovieDetail() {
   // =========================
 
   const handleLike = () => {
-    if (!movie) return;
+    if (!series) return;
 
     const savedFavorites = getFavorites();
 
     const alreadyExists = savedFavorites.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     if (alreadyExists) {
-
       const updatedFavorites =
         savedFavorites.filter(
           (item) =>
             !(
-              item.id === movie.id &&
-              item.type === 'Movie'
+              item.id === series.id &&
+              item.type === 'Series'
             )
         );
 
@@ -271,18 +274,18 @@ function MovieDetail() {
       return;
     }
 
-    const movieToSave = {
-      id: movie.id,
-      title: movie.title,
+    const seriesToSave = {
+      id: series.id,
+      title: series.name,
       year: releaseYear,
       rating,
-      type: 'Movie',
+      type: 'Series',
       poster,
     };
 
     const updatedFavorites = [
       ...savedFavorites,
-      movieToSave,
+      seriesToSave,
     ];
 
     saveFavorites(updatedFavorites);
@@ -295,8 +298,7 @@ function MovieDetail() {
   // =========================
 
   const handleReviewPublished = (newReview) => {
-
-    if (!movie) return;
+    if (!series) return;
 
     // -------------------------
     // AUTO MARK AS WATCHED
@@ -306,24 +308,23 @@ function MovieDetail() {
 
     const alreadyWatched = savedWatched.some(
       (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
+        item.id === series.id &&
+        item.type === 'Series'
     );
 
     if (!alreadyWatched) {
-
-      const movieToSave = {
-        id: movie.id,
-        title: movie.title,
+      const seriesToSave = {
+        id: series.id,
+        title: series.name,
         year: releaseYear,
         rating,
-        type: 'Movie',
+        type: 'Series',
         poster,
       };
 
       const updatedWatched = [
         ...savedWatched,
-        movieToSave,
+        seriesToSave,
       ];
 
       saveWatched(updatedWatched);
@@ -332,33 +333,44 @@ function MovieDetail() {
     setIsWatched(true);
 
     // -------------------------
+    // ADD REVIEW TO PAGE
+    // -------------------------
+
+    setReviews((currentReviews) => [
+      {
+        ...newReview,
+        username: 'You',
+        profile,
+      },
+      ...currentReviews,
+    ]);
+
+    // -------------------------
     // AUTO ADD FAVORITE
     // -------------------------
 
     if (newReview.liked) {
-
       const savedFavorites = getFavorites();
 
       const alreadyFavorite = savedFavorites.some(
         (item) =>
-          item.id === movie.id &&
-          item.type === 'Movie'
+          item.id === series.id &&
+          item.type === 'Series'
       );
 
       if (!alreadyFavorite) {
-
-        const movieToSave = {
-          id: movie.id,
-          title: movie.title,
+        const seriesToSave = {
+          id: series.id,
+          title: series.name,
           year: releaseYear,
           rating,
-          type: 'Movie',
+          type: 'Series',
           poster,
         };
 
         const updatedFavorites = [
           ...savedFavorites,
-          movieToSave,
+          seriesToSave,
         ];
 
         saveFavorites(updatedFavorites);
@@ -377,7 +389,7 @@ function MovieDetail() {
       <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
         <div className="container mx-auto">
           <p className="text-sm text-[#93939A]">
-            Loading movie...
+            Loading series...
           </p>
         </div>
       </main>
@@ -393,19 +405,19 @@ function MovieDetail() {
       <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
         <div className="container mx-auto">
           <p className="text-sm text-red-400">
-            Failed to load movie.
+            Failed to load series.
           </p>
         </div>
       </main>
     );
   }
 
-  if (!movie) {
+  if (!series) {
     return (
       <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
         <div className="container mx-auto">
           <p className="text-sm text-[#93939A]">
-            Movie not found.
+            Series not found.
           </p>
         </div>
       </main>
@@ -416,11 +428,11 @@ function MovieDetail() {
   // REVIEW MODAL DATA
   // =========================
 
-  const reviewMovie = {
-    id: movie.id,
-    title: movie.title,
+  const reviewSeries = {
+    id: series.id,
+    title: series.name,
     year: releaseYear,
-    type: 'Movie',
+    type: 'Series',
     genre,
     poster,
   };
@@ -436,11 +448,11 @@ function MovieDetail() {
 
         <img
           src={
-            movie.backdrop_path
-              ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
+            series.backdrop_path
+              ? `https://image.tmdb.org/t/p/original${series.backdrop_path}`
               : dummyPoster
           }
-          alt={movie.title}
+          alt={series.name}
           className="absolute inset-0 h-full w-full object-cover"
         />
 
@@ -451,7 +463,7 @@ function MovieDetail() {
       </section>
 
       {/* =========================
-          MOVIE INFORMATION
+          SERIES INFORMATION
       ========================= */}
 
       <section className="container mx-auto px-6">
@@ -461,11 +473,11 @@ function MovieDetail() {
           <div>
 
             <Badge>
-              Movie
+              Series
             </Badge>
 
             <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              {movie.title}
+              {series.name}
             </h1>
 
             <p className="mt-1 text-sm text-[#93939A]">
@@ -568,12 +580,28 @@ function MovieDetail() {
 
           </div>
 
-          {/* MOVIE METADATA */}
+          {/* SERIES METADATA */}
 
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
 
             <span className="text-[#D4D4D8]">
               {releaseYear}
+            </span>
+
+            <span className="text-[#52525B]">
+              •
+            </span>
+
+            <span className="text-[#D4D4D8]">
+              {seasons} seasons
+            </span>
+
+            <span className="text-[#52525B]">
+              •
+            </span>
+
+            <span className="text-[#D4D4D8]">
+              {episodes} episodes
             </span>
 
             <span className="text-[#52525B]">
@@ -603,26 +631,17 @@ function MovieDetail() {
             </span>
 
             <span className="text-[#D4D4D8]">
-              {movie.production_countries?.[0]?.name || 'N/A'}
+              {series.origin_country?.[0] || 'N/A'}
             </span>
 
           </div>
-
-          {/* DIRECTOR */}
-
-          <p className="mt-3 text-sm text-[#93939A]">
-            Director:{' '}
-            <span className="text-[#D4D4D8]">
-              {movie.director || 'N/A'}
-            </span>
-          </p>
 
           {/* DESCRIPTION */}
 
           <div className="mt-4 max-w-2xl">
 
             <p className="text-sm leading-7 text-[#D4D4D8] sm:text-base">
-              {movie.overview || 'No description available.'}
+              {series.overview || 'No description available.'}
             </p>
 
           </div>
@@ -764,7 +783,7 @@ function MovieDetail() {
                     <i className="ri-heart-fill text-red-400"></i>
 
                     <span>
-                      You liked this movie
+                      You liked this series
                     </span>
 
                   </div>
@@ -796,10 +815,10 @@ function MovieDetail() {
       <PopularReviews compact />
 
       {/* =========================
-          SIMILAR MOVIES
+          SIMILAR SERIES
       ========================= */}
 
-      <SimilarMovies movieId={movie.id} />
+      <SimilarSeries seriesId={series.id} />
 
       {/* =========================
           REVIEW MODAL
@@ -808,7 +827,7 @@ function MovieDetail() {
       <ReviewModal
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
-        movie={reviewMovie}
+        movie={reviewSeries}
         onPublish={handleReviewPublished}
       />
 
@@ -816,4 +835,4 @@ function MovieDetail() {
   );
 }
 
-export default MovieDetail;
+export default SeriesDetail;
