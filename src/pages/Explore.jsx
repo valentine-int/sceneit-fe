@@ -24,7 +24,7 @@ function Explore() {
     rating,
     setRating,
 
-    genres,
+    availableGenres,
 
     results,
 
@@ -38,7 +38,10 @@ function Explore() {
   return (
     <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
 
-      {/* HEADER */}
+      {/* =========================
+          HEADER
+      ========================= */}
+
       <section className="container mx-auto px-6 pb-8 pt-32">
 
         <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#93939A]">
@@ -55,12 +58,16 @@ function Explore() {
 
       </section>
 
-      {/* SEARCH & FILTER */}
+      {/* =========================
+          SEARCH & FILTER
+      ========================= */}
+
       <section className="container mx-auto px-6 pb-10">
 
         <div className="rounded-2xl border border-[#27272A] bg-[#12141C] p-4 sm:p-5">
 
           {/* SEARCH */}
+
           <div className="flex flex-col gap-3 sm:flex-row">
 
             <div className="flex min-w-0 flex-1 items-center rounded-xl border border-[#27272A] bg-[#090A0F] px-4 py-3.5">
@@ -97,14 +104,17 @@ function Explore() {
           </div>
 
           {/* FILTERS */}
+
           <div className="mt-4 flex flex-wrap items-center gap-3">
 
             {/* TYPE */}
+
             <select
               value={type}
-              onChange={(event) =>
-                setType(event.target.value)
-              }
+              onChange={(event) => {
+                setType(event.target.value);
+                setGenre('');
+              }}
               className="rounded-lg border border-[#27272A] bg-[#090A0F] px-3.5 py-2.5 text-sm text-[#93939A] outline-none"
             >
 
@@ -116,13 +126,14 @@ function Explore() {
                 Movies
               </option>
 
-              <option value="tv">
+              <option value="series">
                 Series
               </option>
 
             </select>
 
             {/* GENRE */}
+
             <select
               value={genre}
               onChange={(event) =>
@@ -135,13 +146,13 @@ function Explore() {
                 All Genres
               </option>
 
-              {genres.map((item) => (
+              {availableGenres.map((item) => (
 
                 <option
-                  key={item}
-                  value={item}
+                  key={`${item.type}-${item.id}`}
+                  value={item.id}
                 >
-                  {item}
+                  {item.name}
                 </option>
 
               ))}
@@ -149,6 +160,7 @@ function Explore() {
             </select>
 
             {/* YEAR */}
+
             <select
               value={year}
               onChange={(event) =>
@@ -178,6 +190,7 @@ function Explore() {
             </select>
 
             {/* RATING */}
+
             <select
               value={rating}
               onChange={(event) =>
@@ -209,6 +222,7 @@ function Explore() {
             </select>
 
             {/* RESET */}
+
             <button
               type="button"
               onClick={handleReset}
@@ -223,7 +237,10 @@ function Explore() {
 
       </section>
 
-      {/* RESULTS */}
+      {/* =========================
+          RESULTS
+      ========================= */}
+
       <section className="container mx-auto px-6 pb-16">
 
         <div className="mb-6 flex items-end justify-between">
@@ -249,6 +266,7 @@ function Explore() {
         </div>
 
         {/* LOADING */}
+
         {loading && (
 
           <p className="py-10 text-sm text-[#93939A]">
@@ -258,6 +276,7 @@ function Explore() {
         )}
 
         {/* ERROR */}
+
         {error && (
 
           <p className="py-10 text-sm text-red-400">
@@ -267,6 +286,7 @@ function Explore() {
         )}
 
         {/* RESULTS */}
+
         {!loading &&
           !error &&
           results.length > 0 && (
@@ -276,43 +296,33 @@ function Explore() {
               {results.map((item) => (
 
                 <div
-                  key={`${item.media_type}-${item.id}`}
+                  key={`${item.type}-${item.tmdbId}`}
                   className="w-full"
                 >
 
                   <MovieCard
-                    id={item.id}
-
-                    title={
-                      item.media_type === 'movie'
-                        ? item.title
-                        : item.name
-                    }
-
-                    year={
-                      item.media_type === 'movie'
-                        ? item.release_date?.slice(0, 4) || 'N/A'
-                        : item.first_air_date?.slice(0, 4) || 'N/A'
-                    }
-
+                    id={item.tmdbId}
+                    title={item.title}
+                    year={item.releaseYear || 'N/A'}
                     rating={
-                      item.vote_average
-                        ? item.vote_average.toFixed(1)
+                      item.rating !== null &&
+                      item.rating !== undefined
+                        ? Number(item.rating).toFixed(1)
                         : 'N/A'
                     }
-
                     poster={
-                      item.poster_path
-                        ? getTmdbImage(item.poster_path, 'w500')
+                      item.posterPath
+                        ? getTmdbImage(
+                            item.posterPath,
+                            'w500'
+                          )
                         : dummyPoster
                     }
-
                     type={
-                      item.media_type === 'movie'
+                      item.type === 'movie'
                         ? 'Movie'
                         : 'Series'
                     }
-
                   />
 
                 </div>
@@ -324,6 +334,7 @@ function Explore() {
           )}
 
         {/* NO RESULTS */}
+
         {!loading &&
           !error &&
           search &&

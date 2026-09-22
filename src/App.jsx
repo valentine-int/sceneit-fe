@@ -1,10 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
+import { AuthProvider } from './context/AuthContext';
+
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 
 import Home from './pages/Home';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import Explore from './pages/Explore';
 import MovieDetail from './pages/MovieDetail';
 import Movies from './pages/Movies';
@@ -18,26 +22,31 @@ import MyFavorite from './pages/profile/MyFavorite';
 
 function App() {
   return (
-    <BrowserRouter basename="/sceneit-fe">
-      <Navbar />
+    <AuthProvider>
+      <BrowserRouter basename="/sceneit-fe">
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/movie/:id" element={<MovieDetail />} />
-        <Route path="/movies" element={<Movies />} />
-        <Route path="/series" element={<Series />} />
-        <Route path="/series/:id" element={<SeriesDetail />} />
-        <Route path="/profile" element={<PublicProfile />} />
-        <Route path="/me/reviews" element={<MyReviews />} />
-        <Route path="/me/watchlist" element={<MyWatchlist />} />
-        <Route path="/me/watched" element={<MyWatched />} />
-        <Route path="/me/favorite" element={<MyFavorite />} />
-        
-      </Routes>
+        <Navbar />
 
-      <Footer />
-    </BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/movie/:id" element={<MovieDetail />} />
+          <Route path="/movies" element={<Movies />} />
+          <Route path="/series" element={<Series />} />
+          <Route path="/series/:id" element={<SeriesDetail />} />
+          <Route path="/profile" element={<PublicProfile />} />
+          <Route path="/me/reviews" element={<MyReviews />} />
+          <Route path="/me/watchlist" element={<MyWatchlist />} />
+          <Route path="/me/watched" element={<MyWatched />} />
+          <Route path="/me/favorite" element={<MyFavorite />} />
+        </Routes>
+
+        <Footer />
+
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

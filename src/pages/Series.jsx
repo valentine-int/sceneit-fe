@@ -13,6 +13,8 @@ function Series() {
     error,
   } = useSeries();
 
+  console.log('SERIES DATA:', data);
+
   const trendingSeries = data?.trending?.results || [];
   const popularSeries = data?.popular?.results || [];
   const topRatedSeries = data?.topRated?.results || [];
@@ -94,34 +96,29 @@ function Series() {
     );
   }
 
-  const renderSeriesCard = (series) => (
-    <div
-      key={series.id}
-      className="w-[160px] shrink-0 sm:w-[180px] md:w-[200px]"
-    >
-      <MovieCard
-        id={series.id}
-        title={series.name}
-        year={
-          series.first_air_date
-            ? series.first_air_date.slice(0, 4)
-            : 'N/A'
-        }
-        rating={
-          series.vote_average
-            ? series.vote_average.toFixed(1)
-            : 'N/A'
-        }
-        
-        poster={
-          series.poster_path
-          ? getTmdbImage(series.poster_path, 'w500')
-          : dummyPoster
-        }
-        type="Series"
-      />
-    </div>
-  );
+const renderSeriesCard = (series) => (
+  <div
+    key={series.tmdbId}
+    className="w-[160px] shrink-0 sm:w-[180px] md:w-[200px]"
+  >
+    <MovieCard
+      id={series.tmdbId}
+      title={series.title}
+      year={series.releaseYear || 'N/A'}
+      rating={
+        series.rating !== null &&
+        series.rating !== undefined
+          ? Number(series.rating).toFixed(1)
+          : 'N/A'
+      }
+      poster={
+        getTmdbImage(series.posterPath, 'w500') ||
+        dummyPoster
+      }
+      type="Series"
+    />
+  </div>
+);
 
   const renderSeriesSection = (title, series, ref) => {
 

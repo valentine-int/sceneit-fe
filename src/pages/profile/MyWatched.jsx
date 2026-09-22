@@ -3,23 +3,41 @@ import { Link } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 
 import MovieCard from '../../components/movie/MovieCard';
-import { getWatched } from '../../utils/sceneitStorage';
+import { getWatched } from '../../services/watchedService';
+import { getTmdbImage } from '../../utils/tmdbImages';
 
 function MyWatched() {
   const [watched, setWatched] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const savedWatched = getWatched();
+    async function loadWatched() {
+      try {
+        setIsLoading(true);
+        setErrorMessage('');
 
-    setWatched(savedWatched);
+        const result = await getWatched();
+
+        setWatched(result.watched || []);
+      } catch (error) {
+        console.error('WATCHED LOAD ERROR:', error);
+
+        setErrorMessage(
+          error.message || 'Failed to load your watched movies.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadWatched();
   }, []);
 
   return (
     <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
 
-      {/* =========================
-          HEADER
-      ========================= */}
+      {/* HEADER */}
 
       <section className="container mx-auto px-6 pb-8 pt-32">
 
@@ -49,41 +67,89 @@ function MyWatched() {
 
           </div>
 
-          <span className="hidden text-sm text-[#93939A] sm:block">
-            {watched.length} titles
-          </span>
+          {!isLoading && (
+            <span className="hidden text-sm text-[#93939A] sm:block">
+              {watched.length} titles
+            </span>
+          )}
 
         </div>
 
       </section>
 
-      {/* =========================
-          WATCHED
-      ========================= */}
+      {/* WATCHED */}
 
       <section className="container mx-auto px-6 pb-20">
 
-        {watched.length > 0 ? (
+        {/* LOADING */}
+
+        {isLoading && (
+          <div className="py-20 text-center">
+
+            <i className="ri-loader-4-line animate-spin text-3xl text-[#93939A]"></i>
+
+            <p className="mt-4 text-sm text-[#93939A]">
+              Loading your watched movies...
+            </p>
+
+          </div>
+        )}
+
+        {/* ERROR */}
+
+        {!isLoading && errorMessage && (
+          <div className="py-20 text-center">
+
+            <i className="ri-error-warning-line text-3xl text-[#93939A]"></i>
+
+            <p className="mt-4 text-sm text-[#93939A]">
+              {errorMessage}
+            </p>
+
+          </div>
+        )}
+
+        {/* MOVIES */}
+
+        {!isLoading && !errorMessage && watched.length > 0 && (
 
           <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
 
-            {watched.map((movie) => (
+            {watched.map((item) => {
 
-              <MovieCard
-                key={`${movie.type}-${movie.id}`}
-                id={movie.id}
-                title={movie.title}
-                year={movie.year}
-                rating={movie.rating}
-                type={movie.type}
-                poster={movie.poster}
-              />
+              const movie = item.movie;
 
-            ))}
+              if (!movie) {
+                return null;
+              }
+
+              const poster = getTmdbImage(movie.posterPath);
+
+              const type =
+                movie.type === 'series'
+                  ? 'Series'
+                  : 'Movie';
+
+              return (
+                <MovieCard
+                  key={item.id}
+                  id={movie.tmdbId}
+                  title={movie.title}
+                  year={movie.releaseYear}
+                  rating={movie.rating}
+                  type={type}
+                  poster={poster}
+                />
+              );
+            })}
 
           </div>
 
-        ) : (
+        )}
+
+        {/* EMPTY */}
+
+        {!isLoading && !errorMessage && watched.length === 0 && (
 
           <div className="py-20 text-center">
 

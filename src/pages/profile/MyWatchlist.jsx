@@ -1,113 +1,124 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 
 import MovieCard from '../../components/movie/MovieCard';
-import { getWatchlist } from '../../utils/sceneitStorage';
+import { getWatchlist } from '../../services/watchlistService';
+import { getTmdbImage } from '../../utils/tmdbImages';
 
 function MyWatchlist() {
   const [watchlist, setWatchlist] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const savedWatchlist = getWatchlist();
+    async function loadWatchlist() {
+      try {
+        setIsLoading(true);
+        setErrorMessage('');
 
-    setWatchlist(savedWatchlist);
+        const result = await getWatchlist();
+
+        setWatchlist(result.watchlist || []);
+      } catch (error) {
+        console.error('WATCHLIST LOAD ERROR:', error);
+
+        setErrorMessage(
+          error.message || 'Failed to load your watchlist.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadWatchlist();
   }, []);
 
   return (
     <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
 
-      {/* =========================
-          HEADER
-      ========================= */}
+      <section className="container mx-auto px-6 pb-16 pt-32">
 
-      <section className="container mx-auto px-6 pb-8 pt-32">
+        <div className="mb-8">
 
-        <Link
-          to="/profile"
-          className="mb-6 inline-flex items-center gap-1.5 text-sm text-[#93939A] transition-colors hover:text-[#F4F4F5]"
-        >
-          <i className="ri-arrow-left-s-line text-lg"></i>
-          Profile
-        </Link>
+          <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
+            Your collection
+          </p>
 
-        <div className="flex items-end justify-between">
+          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
+            My Watchlist
+          </h1>
 
-          <div>
-
-            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#93939A]">
-              Saved for later
-            </p>
-
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              My Watchlist
-            </h1>
-
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#93939A]">
-              Movies and series you want to watch later.
-            </p>
-
-          </div>
-
-          <span className="hidden text-sm text-[#93939A] sm:block">
-            {watchlist.length} titles
-          </span>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#93939A]">
+            Movies and series you want to watch later.
+          </p>
 
         </div>
 
-      </section>
+        {isLoading && (
+          <div className="py-20 text-center">
 
-      {/* =========================
-          WATCHLIST
-      ========================= */}
-
-      <section className="container mx-auto px-6 pb-20">
-
-        {watchlist.length > 0 ? (
-
-          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-
-            {watchlist.map((movie) => (
-
-              <MovieCard
-                key={`${movie.type}-${movie.id}`}
-                id={movie.id}
-                title={movie.title}
-                year={movie.year}
-                rating={movie.rating}
-                type={movie.type}
-                poster={movie.poster}
-              />
-
-            ))}
+            <p className="text-sm text-[#93939A]">
+              Loading your watchlist...
+            </p>
 
           </div>
+        )}
 
-        ) : (
+        {!isLoading && errorMessage && (
+          <div className="py-20 text-center">
 
+            <i className="ri-error-warning-line text-3xl text-[#52525B]"></i>
+
+            <p className="mt-4 text-sm text-[#93939A]">
+              {errorMessage}
+            </p>
+
+          </div>
+        )}
+
+        {!isLoading && !errorMessage && watchlist.length > 0 && (
+          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+
+            {watchlist.map((item) => {
+              const movie = item.movie;
+
+              const poster = getTmdbImage(movie.posterPath);
+
+              const type =
+                movie.type === 'series'
+                  ? 'Series'
+                  : 'Movie';
+
+              return (
+                <MovieCard
+                  key={item.id}
+                  id={movie.tmdbId}
+                  title={movie.title}
+                  year={movie.releaseYear}
+                  rating={movie.rating}
+                  type={type}
+                  poster={poster}
+                />
+              );
+            })}
+
+          </div>
+        )}
+
+        {!isLoading && !errorMessage && watchlist.length === 0 && (
           <div className="py-20 text-center">
 
             <i className="ri-bookmark-line text-3xl text-[#52525B]"></i>
 
-            <h2 className="mt-4 text-lg font-semibold">
-              Your watchlist is empty
-            </h2>
-
-            <p className="mx-auto mt-2 max-w-md text-sm text-[#93939A]">
-              Save movies and series you want to watch later and they will
-              appear here.
+            <p className="mt-4 text-sm text-[#93939A]">
+              Your watchlist is empty.
             </p>
 
-            <Link
-              to="/movies"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#F4F4F5] px-4 py-2.5 text-sm font-semibold text-[#090A0F] transition-colors hover:bg-[#E4E4E7]"
-            >
-              Browse Movies
-              <i className="ri-arrow-right-s-line"></i>
-            </Link>
+            <p className="mt-2 text-xs text-[#52525B]">
+              Add movies or series to your watchlist and they will appear here.
+            </p>
 
           </div>
-
         )}
 
       </section>

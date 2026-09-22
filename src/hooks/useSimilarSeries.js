@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 
 import {
-  getSimilarSeries,
-} from '../services/tmdb';
+  getSimilarContent,
+} from '../services/movieService';
 
 import useFetch from './useFetch';
 
@@ -15,7 +15,7 @@ function useSimilarSeries(seriesId) {
     }
 
     const data =
-      await getSimilarSeries(seriesId);
+      await getSimilarContent(seriesId, 'series');
 
     return data.results || [];
 

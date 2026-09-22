@@ -1,377 +1,211 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+
 import 'remixicon/fonts/remixicon.css';
 
-import Button from '../components/common/Button';
-import Badge from '../components/common/Badge';
-import PopularReviews from '../components/review/PopularReviews';
-import SimilarMovies from '../components/movie/SimilarMovies';
-import ReviewModal from '../components/review/ReviewModal';
+import { useParams } from 'react-router-dom';
 
-import profile from '../assets/profile.jpg';
-import dummyPoster from '../assets/Poster1.jpg';
+import { useAuth } from '../context/AuthContext';
+
+import { getTmdbImage } from '../utils/tmdbImages';
+
+import { formatDuration } from '../utils/formatDuration';
+
+import { formatRating } from '../utils/formatRating';
+
+import {
+  getWatchlist as getBackendWatchlist,
+  addToWatchlist,
+  removeFromWatchlist,
+} from '../services/watchlistService';
+
+import {
+  getWatched,
+  addToWatched,
+  removeFromWatched,
+} from '../services/watchedService';
+
+import Button from '../components/common/Button';
+
+import Badge from '../components/common/Badge';
+
+import PopularReviews from '../components/review/PopularReviews';
+
+import SimilarMovies from '../components/movie/SimilarMovies';
+
+import ReviewModal from '../components/review/ReviewModal';
 
 import useMovieDetail from '../hooks/useMovieDetail';
 
-import {
-  getReviews,
-  getWatchlist,
-  saveWatchlist,
-  getWatched,
-  saveWatched,
-  getFavorites,
-  saveFavorites,
-} from '../utils/sceneitStorage';
+import profile from '../assets/profile.jpg';
 
 function MovieDetail() {
   const { id } = useParams();
+
+  const { user } = useAuth();
 
   const {
     data,
     loading,
     error,
-  } = useMovieDetail(id);
+  } = useMovieDetail(id, 'movie');
 
+  // Movie action state
   const [isWatchlisted, setIsWatchlisted] = useState(false);
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [watchlistError, setWatchlistError] = useState('');
+
   const [isWatched, setIsWatched] = useState(false);
+  const [watchedLoading, setWatchedLoading] = useState(false);
+  const [watchedError, setWatchedError] = useState('');
+
   const [isLiked, setIsLiked] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
+  // User reviews
   const [reviews, setReviews] = useState([]);
-  const movie = data?.movie;
-  const cast = data?.cast || [];
 
-
+  // Check watchlist status
   useEffect(() => {
-  const loadReviews = () => {
-    if (!movie?.id) return;
-
-    const savedReviews = getReviews();
-
-    const movieReviews = savedReviews.filter(
-      (review) =>
-        Number(review.movieId) === Number(movie.id) &&
-        review.type === 'Movie'
-    );
-
-    setReviews(movieReviews);
-  };
-
-  loadReviews();
-
-  window.addEventListener(
-    'sceneit-storage',
-    loadReviews
-  );
-
-  return () => {
-    window.removeEventListener(
-      'sceneit-storage',
-      loadReviews
-    );
-  };
-}, [movie?.id]);
-
-
-  // =========================
-  // MOVIE INFORMATION
-  // =========================
-
-  const releaseYear =
-    movie?.release_date
-      ? movie.release_date.slice(0, 4)
-      : 'N/A';
-
-  const rating =
-    movie?.vote_average
-      ? movie.vote_average.toFixed(1)
-      : 'N/A';
-
-  const genre =
-    movie?.genres?.[0]?.name || 'N/A';
-
-  const duration =
-    movie?.runtime
-      ? `${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`
-      : 'N/A';
-
-  const poster =
-    movie?.poster_path
-      ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-      : dummyPoster;
-
-  // =========================
-  // SYNC SAVED STATES
-  // =========================
-
-  useEffect(() => {
-    if (!movie) return;
-
-    const savedWatchlist = getWatchlist();
-    const savedWatched = getWatched();
-    const savedFavorites = getFavorites();
-
-    const alreadyWatchlisted = savedWatchlist.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    const alreadyWatched = savedWatched.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    const alreadyFavorite = savedFavorites.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    setIsWatchlisted(alreadyWatchlisted);
-    setIsWatched(alreadyWatched);
-    setIsLiked(alreadyFavorite);
-  }, [movie]);
-
-  // =========================
-  // WATCHLIST
-  // =========================
-
-  const handleWatchlist = () => {
-    if (!movie) return;
-
-    const savedWatchlist = getWatchlist();
-
-    const alreadyExists = savedWatchlist.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    if (alreadyExists) {
-
-      const updatedWatchlist =
-        savedWatchlist.filter(
-          (item) =>
-            !(
-              item.id === movie.id &&
-              item.type === 'Movie'
-            )
-        );
-
-      saveWatchlist(updatedWatchlist);
-
-      setIsWatchlisted(false);
-
-      return;
-    }
-
-    const movieToSave = {
-      id: movie.id,
-      title: movie.title,
-      year: releaseYear,
-      rating,
-      type: 'Movie',
-      poster,
-    };
-
-    const updatedWatchlist = [
-      ...savedWatchlist,
-      movieToSave,
-    ];
-
-    saveWatchlist(updatedWatchlist);
-
-    setIsWatchlisted(true);
-  };
-
-  // =========================
-  // WATCHED
-  // =========================
-
-  const handleWatched = () => {
-    if (!movie) return;
-
-    const savedWatched = getWatched();
-
-    const alreadyExists = savedWatched.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    if (alreadyExists) {
-
-      const updatedWatched =
-        savedWatched.filter(
-          (item) =>
-            !(
-              item.id === movie.id &&
-              item.type === 'Movie'
-            )
-        );
-
-      saveWatched(updatedWatched);
-
-      setIsWatched(false);
-
-      return;
-    }
-
-    const movieToSave = {
-      id: movie.id,
-      title: movie.title,
-      year: releaseYear,
-      rating,
-      type: 'Movie',
-      poster,
-    };
-
-    const updatedWatched = [
-      ...savedWatched,
-      movieToSave,
-    ];
-
-    saveWatched(updatedWatched);
-
-    setIsWatched(true);
-  };
-
-  // =========================
-  // FAVORITE
-  // =========================
-
-  const handleLike = () => {
-    if (!movie) return;
-
-    const savedFavorites = getFavorites();
-
-    const alreadyExists = savedFavorites.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    if (alreadyExists) {
-
-      const updatedFavorites =
-        savedFavorites.filter(
-          (item) =>
-            !(
-              item.id === movie.id &&
-              item.type === 'Movie'
-            )
-        );
-
-      saveFavorites(updatedFavorites);
-
-      setIsLiked(false);
-
-      return;
-    }
-
-    const movieToSave = {
-      id: movie.id,
-      title: movie.title,
-      year: releaseYear,
-      rating,
-      type: 'Movie',
-      poster,
-    };
-
-    const updatedFavorites = [
-      ...savedFavorites,
-      movieToSave,
-    ];
-
-    saveFavorites(updatedFavorites);
-
-    setIsLiked(true);
-  };
-
-  // =========================
-  // REVIEW PUBLISHED
-  // =========================
-
-  const handleReviewPublished = (newReview) => {
-
-    if (!movie) return;
-
-    // -------------------------
-    // AUTO MARK AS WATCHED
-    // -------------------------
-
-    const savedWatched = getWatched();
-
-    const alreadyWatched = savedWatched.some(
-      (item) =>
-        item.id === movie.id &&
-        item.type === 'Movie'
-    );
-
-    if (!alreadyWatched) {
-
-      const movieToSave = {
-        id: movie.id,
-        title: movie.title,
-        year: releaseYear,
-        rating,
-        type: 'Movie',
-        poster,
-      };
-
-      const updatedWatched = [
-        ...savedWatched,
-        movieToSave,
-      ];
-
-      saveWatched(updatedWatched);
-    }
-
-    setIsWatched(true);
-
-    // -------------------------
-    // AUTO ADD FAVORITE
-    // -------------------------
-
-    if (newReview.liked) {
-
-      const savedFavorites = getFavorites();
-
-      const alreadyFavorite = savedFavorites.some(
-        (item) =>
-          item.id === movie.id &&
-          item.type === 'Movie'
-      );
-
-      if (!alreadyFavorite) {
-
-        const movieToSave = {
-          id: movie.id,
-          title: movie.title,
-          year: releaseYear,
-          rating,
-          type: 'Movie',
-          poster,
-        };
-
-        const updatedFavorites = [
-          ...savedFavorites,
-          movieToSave,
-        ];
-
-        saveFavorites(updatedFavorites);
+    async function checkWatchlist() {
+      if (!user || !data?.id) {
+        setIsWatchlisted(false);
+        return;
       }
 
-      setIsLiked(true);
+      try {
+        setWatchlistError('');
+
+        const result = await getBackendWatchlist();
+
+        const watchlist = result.watchlist || [];
+
+        const exists = watchlist.some(
+          (item) => Number(item.movieId) === Number(data.id)
+        );
+
+        setIsWatchlisted(exists);
+      } catch (error) {
+        console.error('WATCHLIST LOAD ERROR:', error);
+
+        setIsWatchlisted(false);
+
+        setWatchlistError(
+          error.message || 'Failed to load watchlist status.'
+        );
+      }
+    }
+
+    checkWatchlist();
+  }, [user, data]);
+
+  // Check watched status
+  useEffect(() => {
+    async function checkWatched() {
+      if (!user || !data?.id) {
+        setIsWatched(false);
+        return;
+      }
+
+      try {
+        setWatchedError('');
+
+        const result = await getWatched();
+
+        const watched = result.watched || [];
+
+        const exists = watched.some(
+          (item) => Number(item.movieId) === Number(data.id)
+        );
+
+        setIsWatched(exists);
+      } catch (error) {
+        console.error('WATCHED LOAD ERROR:', error);
+
+        setIsWatched(false);
+
+        setWatchedError(
+          error.message || 'Failed to load watched status.'
+        );
+      }
+    }
+
+    checkWatched();
+  }, [user, data]);
+
+  // Handle watchlist
+  const handleWatchlist = async () => {
+    if (!user) {
+      setWatchlistError('Please log in to use your watchlist.');
+      return;
+    }
+
+    if (!data?.id || watchlistLoading) {
+      return;
+    }
+
+    try {
+      setWatchlistLoading(true);
+      setWatchlistError('');
+
+      if (isWatchlisted) {
+        await removeFromWatchlist(data.id);
+
+        setIsWatchlisted(false);
+      } else {
+        await addToWatchlist(data.id);
+
+        setIsWatchlisted(true);
+      }
+    } catch (error) {
+      console.error('WATCHLIST ERROR:', error);
+
+      setWatchlistError(
+        error.message || 'Failed to update your watchlist.'
+      );
+    } finally {
+      setWatchlistLoading(false);
     }
   };
 
-  // =========================
-  // LOADING
-  // =========================
+  // Handle watched
+  const handleWatched = async () => {
+    if (!user) {
+      setWatchedError('Please log in to mark this as watched.');
+      return;
+    }
 
+    if (!data?.id || watchedLoading) {
+      return;
+    }
+
+    try {
+      setWatchedLoading(true);
+      setWatchedError('');
+
+      if (isWatched) {
+        await removeFromWatched(data.id);
+
+        setIsWatched(false);
+      } else {
+        await addToWatched(data.id);
+
+        setIsWatched(true);
+
+        // Backend removes this movie from watchlist.
+        setIsWatchlisted(false);
+      }
+    } catch (error) {
+      console.error('WATCHED ERROR:', error);
+
+      setWatchedError(
+        error.message || 'Failed to update watched status.'
+      );
+    } finally {
+      setWatchedLoading(false);
+    }
+  };
+
+  // Loading state
   if (loading) {
     return (
       <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
@@ -384,62 +218,95 @@ function MovieDetail() {
     );
   }
 
-  // =========================
-  // ERROR
-  // =========================
-
+  // Error state
   if (error) {
     return (
       <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
         <div className="container mx-auto">
           <p className="text-sm text-red-400">
-            Failed to load movie.
+            {error.message}
           </p>
         </div>
       </main>
     );
   }
 
-  if (!movie) {
-    return (
-      <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
-        <div className="container mx-auto">
-          <p className="text-sm text-[#93939A]">
-            Movie not found.
-          </p>
-        </div>
-      </main>
-    );
-  }
-
-  // =========================
-  // REVIEW MODAL DATA
-  // =========================
-
-  const reviewMovie = {
-    id: movie.id,
-    title: movie.title,
-    year: releaseYear,
+  // Movie data
+  const movie = {
+    title: data.title,
+    year: data.releaseYear,
     type: 'Movie',
-    genre,
-    poster,
+    genre: data.genres,
+    duration: formatDuration(data.duration),
+    director: data.director,
+    country: data.country,
+    rating: formatRating(data.rating),
+    backdrop: getTmdbImage(
+      data.backdropPath,
+      'original'
+    ),
+    description: data.overview,
   };
+
+  // Review published
+  const handleReviewPublished = (newReview) => {
+    setReviews((currentReviews) => [
+      {
+        ...newReview,
+        id: Date.now(),
+        username: 'You',
+        profile: profile,
+      },
+      ...currentReviews,
+    ]);
+
+    if (newReview.liked) {
+      setIsLiked(true);
+    }
+  };
+
+  // Cast
+  const cast = [
+    {
+      id: 1,
+      name: 'Park Shin-hye',
+      role: 'Seo-yeon',
+      image: profile,
+    },
+    {
+      id: 2,
+      name: 'Jeon Jong-seo',
+      role: 'Young-sook',
+      image: profile,
+    },
+    {
+      id: 3,
+      name: 'Kim Sung-ryoung',
+      role: 'Seo-yeon’s Mother',
+      image: profile,
+    },
+    {
+      id: 4,
+      name: 'Lee El',
+      role: 'Young-sook’s Mother',
+      image: profile,
+    },
+    {
+      id: 5,
+      name: 'Park Ho-san',
+      role: 'Seo-yeon’s Father',
+      image: profile,
+    },
+  ];
 
   return (
     <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
 
-      {/* =========================
-          BACKDROP
-      ========================= */}
-
+      {/* Backdrop */}
       <section className="relative h-[420px] overflow-hidden">
 
         <img
-          src={
-            movie.backdrop_path
-              ? `https://image.tmdb.org/t/p/original${movie.backdrop_path}`
-              : dummyPoster
-          }
+          src={movie.backdrop}
           alt={movie.title}
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -450,10 +317,7 @@ function MovieDetail() {
 
       </section>
 
-      {/* =========================
-          MOVIE INFORMATION
-      ========================= */}
-
+      {/* Movie information */}
       <section className="container mx-auto px-6">
 
         <div className="-mt-24 relative z-10 max-w-4xl">
@@ -461,7 +325,7 @@ function MovieDetail() {
           <div>
 
             <Badge>
-              Movie
+              {movie.type}
             </Badge>
 
             <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
@@ -469,24 +333,27 @@ function MovieDetail() {
             </h1>
 
             <p className="mt-1 text-sm text-[#93939A]">
-              {genre}
+              {movie.genre}
             </p>
 
           </div>
 
-          {/* ACTION BUTTONS */}
-
+          {/* Action buttons */}
           <div className="mt-4 flex flex-wrap items-center gap-4">
 
-            {/* WATCHLIST */}
-
+            {/* Watchlist */}
             <button
               type="button"
               onClick={handleWatchlist}
+              disabled={watchlistLoading}
               className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                 isWatchlisted
                   ? 'text-[#F4F4F5]'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
+              } ${
+                watchlistLoading
+                  ? 'cursor-not-allowed opacity-50'
+                  : ''
               }`}
             >
 
@@ -499,20 +366,26 @@ function MovieDetail() {
               ></i>
 
               <span>
-                Watchlist
+                {watchlistLoading
+                  ? 'Updating...'
+                  : 'Watchlist'}
               </span>
 
             </button>
 
-            {/* WATCHED */}
-
+            {/* Watched */}
             <button
               type="button"
               onClick={handleWatched}
+              disabled={watchedLoading}
               className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                 isWatched
                   ? 'text-[#F4F4F5]'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
+              } ${
+                watchedLoading
+                  ? 'cursor-not-allowed opacity-50'
+                  : ''
               }`}
             >
 
@@ -525,26 +398,23 @@ function MovieDetail() {
               ></i>
 
               <span>
-                Watched
+                {watchedLoading
+                  ? 'Updating...'
+                  : 'Watched'}
               </span>
 
             </button>
 
-            {/* FAVORITE */}
-
+            {/* Like */}
             <button
               type="button"
-              onClick={handleLike}
+              onClick={() => setIsLiked(!isLiked)}
               className={`transition-colors ${
                 isLiked
                   ? 'text-red-400'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
               }`}
-              aria-label={
-                isLiked
-                  ? 'Remove from favorites'
-                  : 'Add to favorites'
-              }
+              aria-label="Like movie"
             >
 
               <i
@@ -557,8 +427,7 @@ function MovieDetail() {
 
             </button>
 
-            {/* REVIEW */}
-
+            {/* Review */}
             <Button
               onClick={() => setIsReviewOpen(true)}
             >
@@ -568,12 +437,23 @@ function MovieDetail() {
 
           </div>
 
-          {/* MOVIE METADATA */}
+          {watchlistError && (
+            <p className="mt-3 text-xs text-red-400">
+              {watchlistError}
+            </p>
+          )}
 
+          {watchedError && (
+            <p className="mt-2 text-xs text-red-400">
+              {watchedError}
+            </p>
+          )}
+
+          {/* Movie metadata */}
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
 
             <span className="text-[#D4D4D8]">
-              {releaseYear}
+              {movie.year}
             </span>
 
             <span className="text-[#52525B]">
@@ -581,7 +461,7 @@ function MovieDetail() {
             </span>
 
             <span className="text-[#D4D4D8]">
-              {duration}
+              {movie.duration}
             </span>
 
             <span className="text-[#52525B]">
@@ -593,7 +473,7 @@ function MovieDetail() {
               <i className="ri-star-fill text-yellow-400"></i>
 
               <span className="font-semibold text-[#F4F4F5]">
-                {rating}
+                {movie.rating}
               </span>
 
             </div>
@@ -603,26 +483,25 @@ function MovieDetail() {
             </span>
 
             <span className="text-[#D4D4D8]">
-              {movie.production_countries?.[0]?.name || 'N/A'}
+              {movie.country}
             </span>
 
           </div>
 
-          {/* DIRECTOR */}
-
+          {/* Director */}
           <p className="mt-3 text-sm text-[#93939A]">
             Director:{' '}
+
             <span className="text-[#D4D4D8]">
-              {movie.director || 'N/A'}
+              {movie.director}
             </span>
           </p>
 
-          {/* DESCRIPTION */}
-
+          {/* Description */}
           <div className="mt-4 max-w-2xl">
 
             <p className="text-sm leading-7 text-[#D4D4D8] sm:text-base">
-              {movie.overview || 'No description available.'}
+              {movie.description}
             </p>
 
           </div>
@@ -631,10 +510,7 @@ function MovieDetail() {
 
       </section>
 
-      {/* =========================
-          CAST
-      ========================= */}
-
+      {/* Cast */}
       <section className="container mx-auto px-6 pb-16 pt-14">
 
         <div className="mb-6">
@@ -652,7 +528,6 @@ function MovieDetail() {
         <div className="flex gap-6 overflow-x-auto pb-3">
 
           {cast.map((actor) => (
-
             <div
               key={actor.id}
               className="w-24 flex-shrink-0 text-center"
@@ -661,11 +536,7 @@ function MovieDetail() {
               <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-[#12141C]">
 
                 <img
-                  src={
-                    actor.profile_path
-                      ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                      : profile
-                  }
+                  src={actor.image}
                   alt={actor.name}
                   className="h-full w-full object-cover"
                 />
@@ -677,23 +548,18 @@ function MovieDetail() {
               </p>
 
               <p className="mt-1 text-xs leading-relaxed text-[#93939A]">
-                {actor.character}
+                {actor.role}
               </p>
 
             </div>
-
           ))}
 
         </div>
 
       </section>
 
-      {/* =========================
-          USER REVIEW
-      ========================= */}
-
+      {/* User review */}
       {reviews.length > 0 && (
-
         <section className="container mx-auto px-6 pb-12">
 
           <div className="mb-6">
@@ -711,7 +577,6 @@ function MovieDetail() {
           <div className="max-w-2xl">
 
             {reviews.map((review) => (
-
               <article
                 key={review.id}
                 className="border-t border-[#27272A] py-6"
@@ -722,7 +587,7 @@ function MovieDetail() {
                   <div className="flex items-center gap-3">
 
                     <img
-                      src={review.profile || profile}
+                      src={review.profile}
                       alt={review.username}
                       className="h-9 w-9 rounded-full object-cover"
                     />
@@ -758,7 +623,6 @@ function MovieDetail() {
                 </p>
 
                 {review.liked && (
-
                   <div className="mt-3 flex items-center gap-1.5 text-xs text-[#93939A]">
 
                     <i className="ri-heart-fill text-red-400"></i>
@@ -768,47 +632,34 @@ function MovieDetail() {
                     </span>
 
                   </div>
-
                 )}
 
                 {review.containsSpoiler && (
-
                   <p className="mt-3 text-xs text-[#93939A]">
                     Contains spoilers
                   </p>
-
                 )}
 
               </article>
-
             ))}
 
           </div>
 
         </section>
-
       )}
 
-      {/* =========================
-          POPULAR REVIEWS
-      ========================= */}
-
+      {/* Popular reviews */}
       <PopularReviews compact />
 
-      {/* =========================
-          SIMILAR MOVIES
-      ========================= */}
+      {/* Similar movies */}
+      <SimilarMovies
+        movieId={id}
+      />
 
-      <SimilarMovies movieId={movie.id} />
-
-      {/* =========================
-          REVIEW MODAL
-      ========================= */}
-
+      {/* Review modal */}
       <ReviewModal
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
-        movie={reviewMovie}
         onPublish={handleReviewPublished}
       />
 

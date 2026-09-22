@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { logoutUser } from '../../services/authService';
 import 'remixicon/fonts/remixicon.css';
 
 import Button from '../common/Button';
@@ -13,11 +15,23 @@ import { getTmdbImage } from '../../utils/tmdbImages';
 
 function Navbar() {
 
+  const { user, setUser, isLoading } = useAuth();
   // =========================
   // NAVBAR STATE
   // =========================
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+
+  const handleLogout = async () => {
+  try {
+    await logoutUser();
+    setUser(null);
+    setIsMobileMenuOpen(false);
+  } catch (error) {
+    console.error('LOGOUT ERROR:', error);
+  }
+};
 
   // =========================
   // QUICK SEARCH STATE
@@ -418,21 +432,111 @@ function Navbar() {
 
             {/* =========================
                 PROFILE
-            ========================= */}
+            ========================= */} 
 
-            <Link
-              to="/profile"
-              className="hidden h-9 w-9 overflow-hidden rounded-full border border-[#27272A] transition-opacity hover:opacity-80 sm:block"
-              aria-label="Open profile"
-            >
+{!isLoading && user ? (
+  <div className="relative hidden sm:block">
+    <button
+      type="button"
+      onClick={() =>
+        setIsProfileMenuOpen(!isProfileMenuOpen)
+      }
+      className="h-9 w-9 overflow-hidden rounded-full border border-[#27272A] transition-opacity hover:opacity-80"
+      aria-label="Open profile menu"
+      aria-expanded={isProfileMenuOpen}
+    >
+      <img
+        src={user.avatarUrl || profile}
+        alt={user.name || 'Profile'}
+        className="h-full w-full object-cover"
+      />
+    </button>
 
-              <img
-                src={profile}
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
+    {isProfileMenuOpen && (
+      <div className="absolute right-0 top-12 w-52 overflow-hidden rounded-xl border border-[#27272A] bg-[#12141C] shadow-2xl">
 
-            </Link>
+        <div className="border-b border-[#27272A] px-4 py-3">
+          <p className="truncate text-sm font-semibold text-[#F4F4F5]">
+            {user.name}
+          </p>
+
+          <p className="truncate text-xs text-[#93939A]">
+            {user.email}
+          </p>
+        </div>
+
+        <div className="py-1">
+          <Link
+            to="/profile"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+            <i className="ri-user-line"></i>
+            Profile
+          </Link>
+
+          <Link
+            to="/me/reviews"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+            <i className="ri-chat-3-line"></i>
+            My Reviews
+          </Link>
+
+          <Link
+            to="/me/watchlist"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+            <i className="ri-bookmark-line"></i>
+            Watchlist
+          </Link>
+
+          <Link
+            to="/me/watched"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+            <i className="ri-checkbox-circle-line"></i>
+            Watched
+          </Link>
+
+          <Link
+            to="/me/favorite"
+            onClick={() => setIsProfileMenuOpen(false)}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+            <i className="ri-heart-line"></i>
+            Favorite
+          </Link>
+        </div>
+
+        <div className="border-t border-[#27272A] py-1">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+            <i className="ri-logout-box-r-line"></i>
+            Log out
+          </button>
+        </div>
+
+      </div>
+    )}
+  </div>
+) : !isLoading ? (
+  <Link
+    to="/login"
+    className="hidden sm:block"
+  >
+    <Button variant="ghost">
+      Log in
+    </Button>
+  </Link>
+) : null}
+
 
             {/* =========================
                 MOBILE MENU BUTTON
@@ -704,22 +808,29 @@ function Navbar() {
                   Review
                 </Button>
 
-                <Link
-                  to="/profile"
-                  onClick={() =>
-                    setIsMobileMenuOpen(false)
-                  }
-                  className="flex h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-[#27272A]"
-                  aria-label="Open profile"
-                >
-
-                  <img
-                    src={profile}
-                    alt="Profile"
-                    className="h-full w-full object-cover"
-                  />
-
-                </Link>
+                {!isLoading && user ? (
+                  <Link
+                    to="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex h-10 w-10 flex-shrink-0 overflow-hidden rounded-full border border-[#27272A]"
+                    aria-label="Open profile"
+                  >
+                    <img
+                      src={user.avatarUrl || profile}
+                      alt={user.name || 'Profile'}
+                      className="h-full w-full object-cover"
+                    />
+                  </Link>
+                ) : !isLoading ? (
+                  <Link
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Button variant="ghost">
+                      Log in
+                    </Button>
+                  </Link>
+                ) : null}
 
               </div>
 

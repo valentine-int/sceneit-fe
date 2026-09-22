@@ -5,7 +5,7 @@ import {
   getPopularSeries,
   getTopRatedSeries,
   getAiringTodaySeries,
-} from '../services/tmdb';
+} from '../services/movieService';
 
 import useFetch from './useFetch';
 

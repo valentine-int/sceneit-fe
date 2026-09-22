@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 
@@ -14,7 +14,6 @@ import dummyPoster from '../assets/Poster1.jpg';
 import useSeriesDetail from '../hooks/useSeriesDetail';
 
 import {
-  getReviews,
   getWatchlist,
   saveWatchlist,
   getWatched,
@@ -22,6 +21,8 @@ import {
   getFavorites,
   saveFavorites,
 } from '../utils/sceneitStorage';
+
+import { getTmdbImage } from '../utils/tmdbImages';
 
 function SeriesDetail() {
   const { id } = useParams();
@@ -39,106 +40,43 @@ function SeriesDetail() {
 
   const [reviews, setReviews] = useState([]);
 
-  const series = data?.series;
-  const cast = data?.cast || [];
-
-
-  useEffect(() => {
-  const loadReviews = () => {
-    const savedReviews = getReviews();
-
-    const seriesReviews = savedReviews.filter(
-      (review) =>
-        Number(review.movieId) === Number(series.id) &&
-        review.type === 'Series'
-    );
-
-    setReviews(seriesReviews);
-  };
-
-  if (series?.id) {
-    loadReviews();
-  }
-
-  window.addEventListener(
-    'sceneit-storage',
-    loadReviews
-  );
-
-  return () => {
-    window.removeEventListener(
-      'sceneit-storage',
-      loadReviews
-    );
-  };
-}, [series?.id]);
-
   // =========================
-  // SERIES INFORMATION
+  // SERIES DATA FROM BACKEND
   // =========================
+
+  const series = data;
 
   const releaseYear =
-    series?.first_air_date
-      ? series.first_air_date.slice(0, 4)
-      : 'N/A';
+    series?.releaseYear || 'N/A';
 
   const rating =
-    series?.vote_average
-      ? series.vote_average.toFixed(1)
+    series?.rating !== null &&
+    series?.rating !== undefined
+      ? Number(series.rating).toFixed(1)
       : 'N/A';
 
   const genre =
-    series?.genres?.[0]?.name || 'N/A';
+    series?.genres || 'N/A';
 
   const seasons =
-    series?.number_of_seasons || 0;
+    series?.seasons?.length || 0;
 
   const episodes =
-    series?.number_of_episodes || 0;
-
-  const duration =
-    series?.episode_run_time?.length
-      ? `${series.episode_run_time[0]}m / episode`
-      : 'N/A';
+    series?.seasons?.reduce(
+      (total, season) =>
+        total + (season.episodeCount || 0),
+      0
+    ) || 0;
 
   const poster =
-    series?.poster_path
-      ? `https://image.tmdb.org/t/p/w500${series.poster_path}`
+    series?.posterPath
+      ? getTmdbImage(series.posterPath, 'w500')
       : dummyPoster;
 
-  // =========================
-  // SYNC SAVED STATES
-  // =========================
-
-  useEffect(() => {
-    if (!series) return;
-
-    const savedWatchlist = getWatchlist();
-    const savedWatched = getWatched();
-    const savedFavorites = getFavorites();
-
-    const alreadyWatchlisted = savedWatchlist.some(
-      (item) =>
-        item.id === series.id &&
-        item.type === 'Series'
-    );
-
-    const alreadyWatched = savedWatched.some(
-      (item) =>
-        item.id === series.id &&
-        item.type === 'Series'
-    );
-
-    const alreadyFavorite = savedFavorites.some(
-      (item) =>
-        item.id === series.id &&
-        item.type === 'Series'
-    );
-
-    setIsWatchlisted(alreadyWatchlisted);
-    setIsWatched(alreadyWatched);
-    setIsLiked(alreadyFavorite);
-  }, [series]);
+  const backdrop =
+    series?.backdropPath
+      ? getTmdbImage(series.backdropPath, 'original')
+      : dummyPoster;
 
   // =========================
   // WATCHLIST
@@ -166,7 +104,6 @@ function SeriesDetail() {
         );
 
       saveWatchlist(updatedWatchlist);
-
       setIsWatchlisted(false);
 
       return;
@@ -174,19 +111,17 @@ function SeriesDetail() {
 
     const seriesToSave = {
       id: series.id,
-      title: series.name,
+      title: series.title,
       year: releaseYear,
       rating,
       type: 'Series',
       poster,
     };
 
-    const updatedWatchlist = [
+    saveWatchlist([
       ...savedWatchlist,
       seriesToSave,
-    ];
-
-    saveWatchlist(updatedWatchlist);
+    ]);
 
     setIsWatchlisted(true);
   };
@@ -217,7 +152,6 @@ function SeriesDetail() {
         );
 
       saveWatched(updatedWatched);
-
       setIsWatched(false);
 
       return;
@@ -225,19 +159,17 @@ function SeriesDetail() {
 
     const seriesToSave = {
       id: series.id,
-      title: series.name,
+      title: series.title,
       year: releaseYear,
       rating,
       type: 'Series',
       poster,
     };
 
-    const updatedWatched = [
+    saveWatched([
       ...savedWatched,
       seriesToSave,
-    ];
-
-    saveWatched(updatedWatched);
+    ]);
 
     setIsWatched(true);
   };
@@ -268,7 +200,6 @@ function SeriesDetail() {
         );
 
       saveFavorites(updatedFavorites);
-
       setIsLiked(false);
 
       return;
@@ -276,19 +207,17 @@ function SeriesDetail() {
 
     const seriesToSave = {
       id: series.id,
-      title: series.name,
+      title: series.title,
       year: releaseYear,
       rating,
       type: 'Series',
       poster,
     };
 
-    const updatedFavorites = [
+    saveFavorites([
       ...savedFavorites,
       seriesToSave,
-    ];
-
-    saveFavorites(updatedFavorites);
+    ]);
 
     setIsLiked(true);
   };
@@ -315,19 +244,17 @@ function SeriesDetail() {
     if (!alreadyWatched) {
       const seriesToSave = {
         id: series.id,
-        title: series.name,
+        title: series.title,
         year: releaseYear,
         rating,
         type: 'Series',
         poster,
       };
 
-      const updatedWatched = [
+      saveWatched([
         ...savedWatched,
         seriesToSave,
-      ];
-
-      saveWatched(updatedWatched);
+      ]);
     }
 
     setIsWatched(true);
@@ -339,6 +266,7 @@ function SeriesDetail() {
     setReviews((currentReviews) => [
       {
         ...newReview,
+        id: Date.now(),
         username: 'You',
         profile,
       },
@@ -361,19 +289,17 @@ function SeriesDetail() {
       if (!alreadyFavorite) {
         const seriesToSave = {
           id: series.id,
-          title: series.name,
+          title: series.title,
           year: releaseYear,
           rating,
           type: 'Series',
           poster,
         };
 
-        const updatedFavorites = [
+        saveFavorites([
           ...savedFavorites,
           seriesToSave,
-        ];
-
-        saveFavorites(updatedFavorites);
+        ]);
       }
 
       setIsLiked(true);
@@ -412,6 +338,10 @@ function SeriesDetail() {
     );
   }
 
+  // =========================
+  // NOT FOUND
+  // =========================
+
   if (!series) {
     return (
       <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
@@ -430,7 +360,7 @@ function SeriesDetail() {
 
   const reviewSeries = {
     id: series.id,
-    title: series.name,
+    title: series.title,
     year: releaseYear,
     type: 'Series',
     genre,
@@ -447,12 +377,8 @@ function SeriesDetail() {
       <section className="relative h-[420px] overflow-hidden">
 
         <img
-          src={
-            series.backdrop_path
-              ? `https://image.tmdb.org/t/p/original${series.backdrop_path}`
-              : dummyPoster
-          }
-          alt={series.name}
+          src={backdrop}
+          alt={series.title}
           className="absolute inset-0 h-full w-full object-cover"
         />
 
@@ -477,7 +403,7 @@ function SeriesDetail() {
             </Badge>
 
             <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              {series.name}
+              {series.title}
             </h1>
 
             <p className="mt-1 text-sm text-[#93939A]">
@@ -608,14 +534,6 @@ function SeriesDetail() {
               •
             </span>
 
-            <span className="text-[#D4D4D8]">
-              {duration}
-            </span>
-
-            <span className="text-[#52525B]">
-              •
-            </span>
-
             <div className="flex items-center gap-1.5">
 
               <i className="ri-star-fill text-yellow-400"></i>
@@ -631,7 +549,7 @@ function SeriesDetail() {
             </span>
 
             <span className="text-[#D4D4D8]">
-              {series.origin_country?.[0] || 'N/A'}
+              {series.country || 'N/A'}
             </span>
 
           </div>
@@ -651,61 +569,61 @@ function SeriesDetail() {
       </section>
 
       {/* =========================
-          CAST
+          SEASONS
       ========================= */}
 
-      <section className="container mx-auto px-6 pb-16 pt-14">
+      {series.seasons?.length > 0 && (
+        <section className="container mx-auto px-6 pb-16 pt-14">
 
-        <div className="mb-6">
+          <div className="mb-6">
 
-          <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
-            Cast
-          </p>
+            <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
+              Series
+            </p>
 
-          <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-            Main Cast
-          </h2>
+            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
+              Seasons
+            </h2>
 
-        </div>
+          </div>
 
-        <div className="flex gap-6 overflow-x-auto pb-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
 
-          {cast.map((actor) => (
+            {series.seasons.map((season) => (
 
-            <div
-              key={actor.id}
-              className="w-24 flex-shrink-0 text-center"
-            >
+              <div
+                key={season.seasonNumber}
+                className="border border-[#27272A] bg-[#12141C] p-4"
+              >
 
-              <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-[#12141C]">
+                <p className="text-sm font-semibold text-[#F4F4F5]">
+                  {season.name}
+                </p>
 
-                <img
-                  src={
-                    actor.profile_path
-                      ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-                      : profile
-                  }
-                  alt={actor.name}
-                  className="h-full w-full object-cover"
-                />
+                <p className="mt-2 text-xs text-[#93939A]">
+                  {season.episodeCount} episodes
+                </p>
 
               </div>
 
-              <p className="mt-3 text-sm font-medium text-[#F4F4F5]">
-                {actor.name}
-              </p>
+            ))}
 
-              <p className="mt-1 text-xs leading-relaxed text-[#93939A]">
-                {actor.character}
-              </p>
+          </div>
 
-            </div>
+        </section>
+      )}
 
-          ))}
+      {/* =========================
+          CAST
+      ========================= */}
 
-        </div>
+      {/*
+        Cast sementara belum ditampilkan.
 
-      </section>
+        Backend detail Series saat ini belum mengirim
+        data cast. Nanti kita bisa tambahkan credits
+        dari Backend tanpa mengembalikan FE ke TMDB langsung.
+      */}
 
       {/* =========================
           USER REVIEW
@@ -818,7 +736,9 @@ function SeriesDetail() {
           SIMILAR SERIES
       ========================= */}
 
-      <SimilarSeries seriesId={series.id} />
+      <SimilarSeries
+        seriesId={series.tmdbId}
+      />
 
       {/* =========================
           REVIEW MODAL

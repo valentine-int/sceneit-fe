@@ -1,43 +1,16 @@
 import { useCallback } from 'react';
-
-import {
-  getSeriesDetail,
-  getSeriesCredits,
-} from '../services/tmdb';
-
+import { getMovieDetail } from '../services/movieService';
 import useFetch from './useFetch';
 
 function useSeriesDetail(id) {
 
-  const fetchSeriesDetail = useCallback(async () => {
+  const fetchSeriesDetail = useCallback(() => {
 
     if (!id) {
       throw new Error('Series ID is required.');
     }
 
-    const [
-      seriesData,
-      creditsData,
-    ] = await Promise.all([
-      getSeriesDetail(id),
-      getSeriesCredits(id),
-    ]);
-
-    const cast = (creditsData.cast || [])
-      .slice(0, 10)
-      .map((actor) => ({
-        id: actor.id,
-        name: actor.name,
-        role: actor.character,
-        image: actor.profile_path
-          ? `https://image.tmdb.org/t/p/w185${actor.profile_path}`
-          : null,
-      }));
-
-    return {
-      series: seriesData,
-      cast,
-    };
+    return getMovieDetail(id, 'series');
 
   }, [id]);
 

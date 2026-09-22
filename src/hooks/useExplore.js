@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
+import { exploreContent } from '../services/movieService';
 
 import {
-  searchMulti,
   getMovieGenres,
   getSeriesGenres,
 } from '../services/tmdb';
@@ -61,21 +61,30 @@ function useExplore() {
         setMovieGenres(movieGenreList);
         setSeriesGenres(seriesGenreList);
 
-        const combinedGenres = [
-          ...movieGenreList,
-          ...seriesGenreList,
-        ];
+const combinedGenres = [
+  ...movieGenreList.map((genre) => ({
+    id: genre.id,
+    name: genre.name,
+    type: 'movie',
+  })),
 
-        const uniqueGenres = Array.from(
-          new Map(
-            combinedGenres.map((item) => [
-              item.name,
-              item.name,
-            ])
-          ).values()
-        );
+  ...seriesGenreList.map((genre) => ({
+    id: genre.id,
+    name: genre.name,
+    type: 'series',
+  })),
+];
 
-        setGenres(uniqueGenres);
+const uniqueGenres = Array.from(
+  new Map(
+    combinedGenres.map((item) => [
+      `${item.name}-${item.type}`,
+      item,
+    ])
+  ).values()
+);
+
+setGenres(uniqueGenres);
 
       } catch (err) {
 
@@ -100,97 +109,45 @@ function useExplore() {
 
   const handleSearch = async () => {
 
-    if (!search.trim()) {
+  if (!search.trim()) {
+    setResults([]);
+    return;
+  }
 
-      setResults([]);
-      return;
+  try {
 
-    }
+    setLoading(true);
+    setError('');
 
-    try {
+const data = await exploreContent({
+  query: search.trim(),
+  type: type === 'tv' ? 'series' : type,
+  genre,
+  year,
+  rating,
+  page: 1,
+});
 
-      setLoading(true);
-      setError('');
+    setResults(data.results || []);
 
-      const data = await searchMulti(search);
+  } catch (err) {
 
-      const filteredResults =
-        (data.results || []).filter((item) => {
+    console.error(
+      'EXPLORE API ERROR:',
+      err
+    );
 
-          // Only Movie & Series
-          const validType =
-            item.media_type === 'movie' ||
-            item.media_type === 'tv';
+    setError(
+      'Failed to search movies and series.'
+    );
 
-          // Type
-          const matchesType =
-            type === '' ||
-            item.media_type === type;
+  } finally {
 
-          // Genre
-          const currentGenres =
-            item.media_type === 'movie'
-              ? movieGenres
-              : seriesGenres;
+    setLoading(false);
 
-          const selectedGenre =
-            currentGenres.find(
-              (itemGenre) =>
-                itemGenre.name === genre
-            );
+  }
 
-          const matchesGenre =
-            genre === '' ||
-            item.genre_ids?.includes(
-              selectedGenre?.id
-            );
-
-          // Year
-          const itemYear =
-            item.media_type === 'movie'
-              ? item.release_date?.slice(0, 4)
-              : item.first_air_date?.slice(0, 4);
-
-          const matchesYear =
-            year === '' ||
-            itemYear === year;
-
-          // Rating
-          const matchesRating =
-            rating === '' ||
-            (item.vote_average || 0) >=
-              Number(rating);
-
-          return (
-            validType &&
-            matchesType &&
-            matchesGenre &&
-            matchesYear &&
-            matchesRating
-          );
-
-        });
-
-      setResults(filteredResults);
-
-    } catch (err) {
-
-      console.error(
-        'TMDB SEARCH ERROR:',
-        err
-      );
-
-      setError(
-        'Failed to search movies and series.'
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-
-  };
+};
 
   // =========================
   // RESET
@@ -209,38 +166,56 @@ function useExplore() {
 
   };
 
-  return {
 
-    // Search & filters
-    search,
-    setSearch,
+const availableGenres =
+  type === 'movie'
+    ? movieGenres.map((item) => ({
+        id: item.id,
+        name: item.name,
+        type: 'movie',
+      }))
+    : type === 'series'
+      ? seriesGenres.map((item) => ({
+          id: item.id,
+          name: item.name,
+          type: 'series',
+        }))
+      : genres;
 
-    type,
-    setType,
+return {
 
-    genre,
-    setGenre,
+  // Search & filters
+  search,
+  setSearch,
 
-    year,
-    setYear,
+  type,
+  setType,
 
-    rating,
-    setRating,
+  genre,
+  setGenre,
 
-    // Genres
-    genres,
+  year,
+  setYear,
 
-    // Results
-    results,
+  rating,
+  setRating,
 
-    // State
-    loading,
-    error,
+  // Genres
+  availableGenres,
 
-    // Actions
-    handleSearch,
-    handleReset,
-  };
+  // Results
+  results,
+
+  // State
+  loading,
+  error,
+
+  // Actions
+  handleSearch,
+  handleReset,
+};
+
 }
 
 export default useExplore;
+

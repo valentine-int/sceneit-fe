@@ -5,12 +5,14 @@ import {
   getPopularMovies,
   getTopRatedMovies,
   getNowPlayingMovies,
-} from '../services/tmdb';
+} from '../services/movieService';
 
 import useFetch from './useFetch';
 
 function useMovies() {
+
   const fetchMovies = useCallback(async () => {
+
     const [
       trending,
       popular,
@@ -29,6 +31,7 @@ function useMovies() {
       topRated,
       nowPlaying,
     };
+
   }, []);
 
   return useFetch(fetchMovies);

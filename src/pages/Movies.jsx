@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 
 import MovieCard from '../components/movie/MovieCard';
 import useMovies from '../hooks/useMovies';
+import { getTmdbImage } from '../utils/tmdbImages';
 
 function Movies() {
 
@@ -142,42 +143,38 @@ function Movies() {
   // MOVIE CARD
   // =========================
 
-  const renderMovieCard = (movie) => (
+ const renderMovieCard = (movie) => (
 
-    <div
-      key={movie.id}
-      className="w-[160px] shrink-0 sm:w-[180px] md:w-[200px]"
-    >
+  <div
+    key={movie.tmdbId}
+    className="w-[160px] shrink-0 sm:w-[180px] md:w-[200px]"
+  >
 
-      <MovieCard
-        id={movie.id}
+    <MovieCard
+      id={movie.tmdbId}
 
-        title={movie.title}
+      title={movie.title}
 
-        year={
-          movie.release_date
-            ? movie.release_date.slice(0, 4)
-            : 'N/A'
-        }
+      year={movie.releaseYear || 'N/A'}
 
-        rating={
-          movie.vote_average
-            ? movie.vote_average.toFixed(1)
-            : 'N/A'
-        }
+      rating={
+        movie.rating !== null &&
+        movie.rating !== undefined
+          ? Number(movie.rating).toFixed(1)
+          : 'N/A'
+      }
 
-        poster={
-          movie.poster_path
-            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-            : '/dummyPoster.png'
-        }
+      poster={
+        getTmdbImage(movie.posterPath, 'w500') ||
+        '/dummyPoster.png'
+      }
 
-        type="Movie"
-      />
+      type="Movie"
+    />
 
-    </div>
+  </div>
 
-  );
+);
 
   // =========================
   // SECTION COMPONENT

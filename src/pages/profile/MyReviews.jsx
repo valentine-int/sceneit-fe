@@ -3,19 +3,48 @@ import { Link } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 
 import ReviewCard from '../../components/review/ReviewCard';
-import { getReviews } from '../../utils/sceneitStorage';
+import { getMyReviews } from '../../services/reviewService';
+import { useAuth } from '../../context/AuthContext';
+import { getTmdbImage } from '../../utils/tmdbImages';
 
 import profile from '../../assets/profile.jpg';
 import dummyPoster from '../../assets/Poster1.jpg';
 
 function MyReviews() {
+  const { user } = useAuth();
+
   const [reviews, setReviews] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    const savedReviews = getReviews();
+    async function loadMyReviews() {
+      if (!user) {
+        setReviews([]);
+        setIsLoading(false);
+        return;
+      }
 
-    setReviews(savedReviews);
-  }, []);
+      try {
+        setIsLoading(true);
+        setErrorMessage('');
+
+        const result = await getMyReviews();
+
+        setReviews(result.reviews || []);
+      } catch (error) {
+        console.error('MY REVIEWS LOAD ERROR:', error);
+
+        setErrorMessage(
+          error.message || 'Failed to load your reviews.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadMyReviews();
+  }, [user]);
 
   const formatReviewDate = (date) => {
     if (!date) return 'N/A';
@@ -23,7 +52,7 @@ function MyReviews() {
     const parsedDate = new Date(date);
 
     if (Number.isNaN(parsedDate.getTime())) {
-      return date;
+      return 'N/A';
     }
 
     return parsedDate.toLocaleDateString('en-GB', {
@@ -36,9 +65,7 @@ function MyReviews() {
   return (
     <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
 
-      {/* =========================
-          HEADER
-      ========================= */}
+      {/* HEADER */}
 
       <section className="container mx-auto px-6 pb-8 pt-32">
 
@@ -76,97 +103,125 @@ function MyReviews() {
 
       </section>
 
-      {/* =========================
-          REVIEWS
-      ========================= */}
+      {/* REVIEWS */}
 
       <section className="container mx-auto px-6 pb-20">
 
-        {reviews.length > 0 ? (
+        {isLoading ? (
+
+          <div className="py-20 text-center">
+
+            <p className="text-sm text-[#93939A]">
+              Loading your reviews...
+            </p>
+
+          </div>
+
+        ) : errorMessage ? (
+
+          <div className="py-20 text-center">
+
+            <i className="ri-error-warning-line text-3xl text-[#52525B]"></i>
+
+            <h2 className="mt-4 text-lg font-semibold">
+              Could not load reviews
+            </h2>
+
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#93939A]">
+              {errorMessage}
+            </p>
+
+          </div>
+
+        ) : reviews.length > 0 ? (
 
           <div className="flex flex-col gap-8">
 
-            {reviews.map((review) => (
+            {reviews.map((review) => {
 
-              <article
-                key={review.id}
-                className="border-t border-[#27272A] pt-6"
-              >
+              const movie = review.movie;
 
-                {/* MOVIE / SERIES INFO */}
+              const isSeries = movie?.type === 'series';
 
-                <div className="mb-4 flex items-center justify-between gap-4">
+              const detailPath = isSeries
+                ? `/series/${movie.tmdbId}`
+                : `/movie/${movie.tmdbId}`;
 
-                  <div className="min-w-0">
+              const poster = getTmdbImage(
+                movie?.posterPath,
+                'w500'
+              );
 
-                    <h2 className="truncate text-base font-semibold text-[#F4F4F5] sm:text-lg">
-                      {review.title}
-                    </h2>
+              return (
+                <article
+                  key={review.id}
+                  className="border-t border-[#27272A] pt-6"
+                >
 
-                    <p className="mt-1 text-xs text-[#93939A]">
-                      {review.type}
-                    </p>
+                  {/* MOVIE / SERIES INFO */}
+
+                  <div className="mb-4 flex items-center justify-between gap-4">
+
+                    <div className="min-w-0">
+
+                      <h2 className="truncate text-base font-semibold text-[#F4F4F5] sm:text-lg">
+                        {movie?.title || 'Unknown title'}
+                      </h2>
+
+                      <p className="mt-1 text-xs capitalize text-[#93939A]">
+                        {movie?.type || 'Unknown'}
+                      </p>
+
+                    </div>
+
+                    <Link
+                      to={detailPath}
+                      className="flex-shrink-0 text-xs font-medium text-[#93939A] transition-colors hover:text-[#F4F4F5]"
+                    >
+                      View title
+                      <i className="ri-arrow-right-s-line ml-1"></i>
+                    </Link>
 
                   </div>
 
-                  <Link
-                    to={
-                      review.type === 'Series'
-                        ? `/series/${review.movieId}`
-                        : `/movie/${review.movieId}`
+                  {/* REVIEW */}
+
+                  <ReviewCard
+                    username={user?.name || 'You'}
+                    avatar={
+                      user?.avatarUrl ||
+                      profile
                     }
-                    className="flex-shrink-0 text-xs font-medium text-[#93939A] transition-colors hover:text-[#F4F4F5]"
-                  >
-                    View title
-                    <i className="ri-arrow-right-s-line ml-1"></i>
-                  </Link>
+                    poster={poster || dummyPoster}
+                    rating={review.rating}
+                    date={formatReviewDate(review.createdAt)}
+                    review={review.content}
+                    likes={review.likeCount || 0}
+                    showPoster={true}
+                  />
 
-                </div>
+                  {/* REVIEW STATUS */}
 
-                {/* REVIEW */}
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[#93939A]">
 
-                <ReviewCard
-                  username="Feby Valentine Samosir"
-                  avatar={profile}
-                  poster={review.poster || dummyPoster}
-                  rating={review.rating}
-                  date={formatReviewDate(review.reviewDate)}
-                  review={review.reviewText}
-                  likes={0}
-                  showPoster={true}
-                />
+                    {review.containsSpoiler && (
+                      <span className="flex items-center gap-1.5">
+                        <i className="ri-alert-line"></i>
+                        Contains spoilers
+                      </span>
+                    )}
 
-                {/* REVIEW STATUS */}
+                  </div>
 
-                <div className="mt-3 flex flex-wrap items-center gap-4 text-xs text-[#93939A]">
-
-                  {review.liked && (
-                    <span className="flex items-center gap-1.5">
-                      <i className="ri-heart-fill text-red-400"></i>
-                      You liked this title
-                    </span>
-                  )}
-
-                  {review.containsSpoiler && (
-                    <span className="flex items-center gap-1.5">
-                      <i className="ri-alert-line"></i>
-                      Contains spoilers
-                    </span>
-                  )}
-
-                </div>
-
-              </article>
-
-            ))}
+                </article>
+              );
+            })}
 
           </div>
 
         ) : (
 
-          /* =========================
-             EMPTY STATE
-          ========================= */
+          /* EMPTY STATE */
 
           <div className="py-20 text-center">
 

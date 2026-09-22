@@ -1,9 +1,10 @@
+
 import React from 'react';
 
 import MovieCard from './MovieCard';
 
 import useSimilarSeries from '../../hooks/useSimilarSeries';
-
+import { getTmdbImage } from '../../utils/tmdbImages';
 
 function SimilarSeries({ seriesId }) {
 
@@ -52,9 +53,7 @@ function SimilarSeries({ seriesId }) {
   // =========================
 
   if (error) {
-
     return null;
-
   }
 
 
@@ -100,27 +99,23 @@ function SimilarSeries({ seriesId }) {
           .map((item) => (
 
             <div
-              key={item.id}
+              key={item.tmdbId}
               className="w-[160px] shrink-0 sm:w-[180px] md:w-[200px]"
             >
 
               <MovieCard
-                id={item.id}
-                title={item.name}
-                year={
-                  item.first_air_date
-                    ? item.first_air_date.slice(0, 4)
-                    : 'N/A'
-                }
+                id={item.tmdbId}
+                title={item.title}
+                year={item.releaseYear || 'N/A'}
                 rating={
-                  item.vote_average
-                    ? item.vote_average.toFixed(1)
+                  item.rating !== null &&
+                  item.rating !== undefined
+                    ? Number(item.rating).toFixed(1)
                     : 'N/A'
                 }
                 poster={
-                  item.poster_path
-                    ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                    : '/dummyPoster.png'
+                  getTmdbImage(item.posterPath, 'w500') ||
+                  '/dummyPoster.png'
                 }
                 type="Series"
               />
