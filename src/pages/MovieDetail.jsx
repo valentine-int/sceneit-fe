@@ -1,315 +1,340 @@
 import React, { useEffect, useState } from 'react';
-
+import { useParams } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 
-import { useParams } from 'react-router-dom';
-
-import { useAuth } from '../context/AuthContext';
-
-import { getTmdbImage } from '../utils/tmdbImages';
-
-import { formatDuration } from '../utils/formatDuration';
-
-import { formatRating } from '../utils/formatRating';
+import Badge from '../components/common/Badge';
+import Button from '../components/common/Button';
+import PopularReviews from '../components/review/PopularReviews';
+import SimilarMovies from '../components/movie/SimilarMovies';
+import ReviewCard from '../components/review/ReviewCard';
+import ReviewModal from '../components/review/ReviewModal';
 
 import {
-  getWatchlist as getBackendWatchlist,
+  getMovieReviews,
+  createMovieReview,
+  likeReview,
+  unlikeReview,
+} from '../services/reviewService';
+
+import {
   addToWatchlist,
   removeFromWatchlist,
 } from '../services/watchlistService';
 
 import {
-  getWatched,
   addToWatched,
   removeFromWatched,
 } from '../services/watchedService';
 
-import Button from '../components/common/Button';
-
-import Badge from '../components/common/Badge';
-
-import PopularReviews from '../components/review/PopularReviews';
-
-import SimilarMovies from '../components/movie/SimilarMovies';
-
-import ReviewModal from '../components/review/ReviewModal';
-
 import useMovieDetail from '../hooks/useMovieDetail';
-
-import profile from '../assets/profile.jpg';
+import { getTmdbImage } from '../utils/tmdbImages';
 
 function MovieDetail() {
   const { id } = useParams();
 
-  const { user } = useAuth();
-
   const {
     data,
-    loading,
+    isLoading,
     error,
   } = useMovieDetail(id, 'movie');
 
   // Movie action state
   const [isWatchlisted, setIsWatchlisted] = useState(false);
-  const [watchlistLoading, setWatchlistLoading] = useState(false);
-  const [watchlistError, setWatchlistError] = useState('');
-
   const [isWatched, setIsWatched] = useState(false);
-  const [watchedLoading, setWatchedLoading] = useState(false);
-  const [watchedError, setWatchedError] = useState('');
-
   const [isLiked, setIsLiked] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
 
-  // User reviews
+  // Review state
   const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState('');
+  const [likedReviews, setLikedReviews] = useState([]);
+  const [processingLikes, setProcessingLikes] = useState([]);
 
-  // Check watchlist status
+  // Load reviews for this movie
   useEffect(() => {
-    async function checkWatchlist() {
-      if (!user || !data?.id) {
-        setIsWatchlisted(false);
+    async function loadReviews() {
+      if (!data?.id) {
+        setReviews([]);
         return;
       }
 
       try {
-        setWatchlistError('');
+        setReviewsLoading(true);
+        setReviewsError('');
 
-        const result = await getBackendWatchlist();
+        const result = await getMovieReviews(data.id);
 
-        const watchlist = result.watchlist || [];
-
-        const exists = watchlist.some(
-          (item) => Number(item.movieId) === Number(data.id)
-        );
-
-        setIsWatchlisted(exists);
+        setReviews(result.reviews || []);
       } catch (error) {
-        console.error('WATCHLIST LOAD ERROR:', error);
+        console.error('REVIEWS LOAD ERROR:', error);
 
-        setIsWatchlisted(false);
-
-        setWatchlistError(
-          error.message || 'Failed to load watchlist status.'
+        setReviews([]);
+        setReviewsError(
+          error.message || 'Failed to load reviews.'
         );
+      } finally {
+        setReviewsLoading(false);
       }
     }
 
-    checkWatchlist();
-  }, [user, data]);
+    loadReviews();
+  }, [data]);
 
-  // Check watched status
-  useEffect(() => {
-    async function checkWatched() {
-      if (!user || !data?.id) {
-        setIsWatched(false);
-        return;
-      }
-
-      try {
-        setWatchedError('');
-
-        const result = await getWatched();
-
-        const watched = result.watched || [];
-
-        const exists = watched.some(
-          (item) => Number(item.movieId) === Number(data.id)
-        );
-
-        setIsWatched(exists);
-      } catch (error) {
-        console.error('WATCHED LOAD ERROR:', error);
-
-        setIsWatched(false);
-
-        setWatchedError(
-          error.message || 'Failed to load watched status.'
-        );
-      }
+  // Format backend createdAt for display
+  const formatReviewDate = (date) => {
+    if (!date) {
+      return 'N/A';
     }
 
-    checkWatched();
-  }, [user, data]);
+    const parsedDate = new Date(date);
 
-  // Handle watchlist
+    if (Number.isNaN(parsedDate.getTime())) {
+      return 'N/A';
+    }
+
+    return parsedDate.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  // Add or remove movie from watchlist
   const handleWatchlist = async () => {
-    if (!user) {
-      setWatchlistError('Please log in to use your watchlist.');
-      return;
-    }
-
-    if (!data?.id || watchlistLoading) {
+    if (!data?.id) {
       return;
     }
 
     try {
-      setWatchlistLoading(true);
-      setWatchlistError('');
-
       if (isWatchlisted) {
         await removeFromWatchlist(data.id);
-
         setIsWatchlisted(false);
       } else {
         await addToWatchlist(data.id);
-
         setIsWatchlisted(true);
       }
     } catch (error) {
       console.error('WATCHLIST ERROR:', error);
-
-      setWatchlistError(
-        error.message || 'Failed to update your watchlist.'
-      );
-    } finally {
-      setWatchlistLoading(false);
     }
   };
 
-  // Handle watched
+  // Add or remove movie from watched
   const handleWatched = async () => {
-    if (!user) {
-      setWatchedError('Please log in to mark this as watched.');
-      return;
-    }
-
-    if (!data?.id || watchedLoading) {
+    if (!data?.id) {
       return;
     }
 
     try {
-      setWatchedLoading(true);
-      setWatchedError('');
-
       if (isWatched) {
         await removeFromWatched(data.id);
-
         setIsWatched(false);
       } else {
         await addToWatched(data.id);
-
         setIsWatched(true);
-
-        // Backend removes this movie from watchlist.
         setIsWatchlisted(false);
       }
     } catch (error) {
       console.error('WATCHED ERROR:', error);
-
-      setWatchedError(
-        error.message || 'Failed to update watched status.'
-      );
-    } finally {
-      setWatchedLoading(false);
     }
   };
 
-  // Loading state
-  if (loading) {
+  // Like or unlike a review
+  const handleReviewLike = async (reviewId) => {
+    if (processingLikes.includes(reviewId)) {
+      return;
+    }
+
+    const isCurrentlyLiked =
+      likedReviews.includes(reviewId);
+
+    try {
+      setProcessingLikes((current) => [
+        ...current,
+        reviewId,
+      ]);
+
+      if (isCurrentlyLiked) {
+        await unlikeReview(reviewId);
+
+        setLikedReviews((currentLikedReviews) =>
+          currentLikedReviews.filter(
+            (id) => id !== reviewId
+          )
+        );
+
+        setReviews((currentReviews) =>
+          currentReviews.map((review) =>
+            review.id === reviewId
+              ? {
+                  ...review,
+                  likeCount: Math.max(
+                    (review.likeCount || 0) - 1,
+                    0
+                  ),
+                }
+              : review
+          )
+        );
+
+        return;
+      }
+
+      await likeReview(reviewId);
+
+      setLikedReviews((currentLikedReviews) => [
+        ...currentLikedReviews,
+        reviewId,
+      ]);
+
+      setReviews((currentReviews) =>
+        currentReviews.map((review) =>
+          review.id === reviewId
+            ? {
+                ...review,
+                likeCount:
+                  (review.likeCount || 0) + 1,
+              }
+            : review
+        )
+      );
+    } catch (error) {
+      console.error('REVIEW LIKE ERROR:', error);
+    } finally {
+      setProcessingLikes((current) =>
+        current.filter((id) => id !== reviewId)
+      );
+    }
+  };
+
+  // Create review and optionally like the new review
+  const handleReviewPublished = async (newReview) => {
+    if (!data?.id) {
+      throw new Error('Movie data is not available.');
+    }
+
+    const result = await createMovieReview(data.id, {
+      rating: newReview.rating,
+      content: newReview.reviewText,
+      containsSpoiler: newReview.containsSpoiler,
+    });
+
+    const createdReview = result.review;
+
+    // Like the newly created review if requested
+    if (newReview.liked) {
+      try {
+        await likeReview(createdReview.id);
+
+        setLikedReviews((currentLikedReviews) => [
+          ...currentLikedReviews,
+          createdReview.id,
+        ]);
+      } catch (error) {
+        console.error('REVIEW LIKE ERROR:', error);
+      }
+    }
+
+    // Reload reviews so the new review appears immediately
+    const updatedResult = await getMovieReviews(data.id);
+
+    setReviews(updatedResult.reviews || []);
+
+    // Writing a review means the title has been watched
+    setIsWatched(true);
+
+    // A watched title is removed from the watchlist by backend
+    setIsWatchlisted(false);
+  };
+
+  if (isLoading) {
     return (
-      <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
-        <div className="container mx-auto">
-          <p className="text-sm text-[#93939A]">
-            Loading movie...
-          </p>
-        </div>
+      <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
+        <section className="container mx-auto px-6 pb-20 pt-32">
+
+          <div className="py-20 text-center">
+
+            <i className="ri-loader-4-line animate-spin text-3xl text-[#93939A]"></i>
+
+            <p className="mt-4 text-sm text-[#93939A]">
+              Loading movie details...
+            </p>
+
+          </div>
+
+        </section>
       </main>
     );
   }
 
-  // Error state
-  if (error) {
+  if (error || !data) {
     return (
-      <main className="min-h-screen bg-[#090A0F] px-6 pt-32 text-[#F4F4F5]">
-        <div className="container mx-auto">
-          <p className="text-sm text-red-400">
-            {error.message}
-          </p>
-        </div>
+      <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
+        <section className="container mx-auto px-6 pb-20 pt-32">
+
+          <div className="py-20 text-center">
+
+            <i className="ri-error-warning-line text-3xl text-[#52525B]"></i>
+
+            <h1 className="mt-4 text-xl font-semibold">
+              Could not load this movie
+            </h1>
+
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#93939A]">
+              {error?.message ||
+                'Movie data is not available.'}
+            </p>
+
+          </div>
+
+        </section>
       </main>
     );
   }
 
-  // Movie data
   const movie = {
     title: data.title,
     year: data.releaseYear,
-    type: 'Movie',
+    type:
+      data.type === 'series'
+        ? 'Series'
+        : 'Movie',
     genre: data.genres,
-    duration: formatDuration(data.duration),
+    duration: data.duration
+      ? `${Math.floor(data.duration / 60)}h ${data.duration % 60}m`
+      : 'N/A',
     director: data.director,
     country: data.country,
-    rating: formatRating(data.rating),
+    rating: data.rating
+      ? Number(data.rating).toFixed(1)
+      : 'N/A',
     backdrop: getTmdbImage(
       data.backdropPath,
       'original'
     ),
-    description: data.overview,
+    poster: getTmdbImage(
+      data.posterPath,
+      'w500'
+    ),
+    description:
+      data.overview ||
+      'No description available.',
   };
-
-  // Review published
-  const handleReviewPublished = (newReview) => {
-    setReviews((currentReviews) => [
-      {
-        ...newReview,
-        id: Date.now(),
-        username: 'You',
-        profile: profile,
-      },
-      ...currentReviews,
-    ]);
-
-    if (newReview.liked) {
-      setIsLiked(true);
-    }
-  };
-
-  // Cast
-  const cast = [
-    {
-      id: 1,
-      name: 'Park Shin-hye',
-      role: 'Seo-yeon',
-      image: profile,
-    },
-    {
-      id: 2,
-      name: 'Jeon Jong-seo',
-      role: 'Young-sook',
-      image: profile,
-    },
-    {
-      id: 3,
-      name: 'Kim Sung-ryoung',
-      role: 'Seo-yeon’s Mother',
-      image: profile,
-    },
-    {
-      id: 4,
-      name: 'Lee El',
-      role: 'Young-sook’s Mother',
-      image: profile,
-    },
-    {
-      id: 5,
-      name: 'Park Ho-san',
-      role: 'Seo-yeon’s Father',
-      image: profile,
-    },
-  ];
 
   return (
     <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
 
       {/* Backdrop */}
+
       <section className="relative h-[420px] overflow-hidden">
 
-        <img
-          src={movie.backdrop}
-          alt={movie.title}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        {movie.backdrop && (
+          <img
+            src={movie.backdrop}
+            alt={movie.title}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-[#090A0F] via-[#090A0F]/70 to-[#090A0F]/10" />
 
@@ -318,6 +343,7 @@ function MovieDetail() {
       </section>
 
       {/* Movie information */}
+
       <section className="container mx-auto px-6">
 
         <div className="-mt-24 relative z-10 max-w-4xl">
@@ -333,27 +359,24 @@ function MovieDetail() {
             </h1>
 
             <p className="mt-1 text-sm text-[#93939A]">
-              {movie.genre}
+              {movie.genre || 'Unknown genre'}
             </p>
 
           </div>
 
-          {/* Action buttons */}
+          {/* Movie actions */}
+
           <div className="mt-4 flex flex-wrap items-center gap-4">
 
             {/* Watchlist */}
+
             <button
               type="button"
               onClick={handleWatchlist}
-              disabled={watchlistLoading}
               className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                 isWatchlisted
                   ? 'text-[#F4F4F5]'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
-              } ${
-                watchlistLoading
-                  ? 'cursor-not-allowed opacity-50'
-                  : ''
               }`}
             >
 
@@ -366,26 +389,20 @@ function MovieDetail() {
               ></i>
 
               <span>
-                {watchlistLoading
-                  ? 'Updating...'
-                  : 'Watchlist'}
+                Watchlist
               </span>
 
             </button>
 
             {/* Watched */}
+
             <button
               type="button"
               onClick={handleWatched}
-              disabled={watchedLoading}
               className={`flex items-center gap-2 text-sm font-medium transition-colors ${
                 isWatched
                   ? 'text-[#F4F4F5]'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
-              } ${
-                watchedLoading
-                  ? 'cursor-not-allowed opacity-50'
-                  : ''
               }`}
             >
 
@@ -398,14 +415,13 @@ function MovieDetail() {
               ></i>
 
               <span>
-                {watchedLoading
-                  ? 'Updating...'
-                  : 'Watched'}
+                Watched
               </span>
 
             </button>
 
-            {/* Like */}
+            {/* Movie like */}
+
             <button
               type="button"
               onClick={() => setIsLiked(!isLiked)}
@@ -428,6 +444,7 @@ function MovieDetail() {
             </button>
 
             {/* Review */}
+
             <Button
               onClick={() => setIsReviewOpen(true)}
             >
@@ -437,23 +454,12 @@ function MovieDetail() {
 
           </div>
 
-          {watchlistError && (
-            <p className="mt-3 text-xs text-red-400">
-              {watchlistError}
-            </p>
-          )}
+          {/* Metadata */}
 
-          {watchedError && (
-            <p className="mt-2 text-xs text-red-400">
-              {watchedError}
-            </p>
-          )}
-
-          {/* Movie metadata */}
           <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
 
             <span className="text-[#D4D4D8]">
-              {movie.year}
+              {movie.year || 'N/A'}
             </span>
 
             <span className="text-[#52525B]">
@@ -478,26 +484,35 @@ function MovieDetail() {
 
             </div>
 
-            <span className="text-[#52525B]">
-              •
-            </span>
+            {movie.country && (
+              <>
+                <span className="text-[#52525B]">
+                  •
+                </span>
 
-            <span className="text-[#D4D4D8]">
-              {movie.country}
-            </span>
+                <span className="text-[#D4D4D8]">
+                  {movie.country}
+                </span>
+              </>
+            )}
 
           </div>
 
           {/* Director */}
-          <p className="mt-3 text-sm text-[#93939A]">
-            Director:{' '}
 
-            <span className="text-[#D4D4D8]">
-              {movie.director}
-            </span>
-          </p>
+          {movie.director && (
+            <p className="mt-3 text-sm text-[#93939A]">
+              Director:{' '}
+
+              <span className="text-[#D4D4D8]">
+                {movie.director}
+              </span>
+
+            </p>
+          )}
 
           {/* Description */}
+
           <div className="mt-4 max-w-2xl">
 
             <p className="text-sm leading-7 text-[#D4D4D8] sm:text-base">
@@ -510,157 +525,134 @@ function MovieDetail() {
 
       </section>
 
-      {/* Cast */}
+      {/* Community reviews */}
+
       <section className="container mx-auto px-6 pb-16 pt-14">
 
         <div className="mb-6">
 
           <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
-            Cast
+            Community Reviews
           </p>
 
           <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-            Main Cast
+            What people think
           </h2>
 
         </div>
 
-        <div className="flex gap-6 overflow-x-auto pb-3">
+        {reviewsLoading && (
+          <div className="py-10 text-center">
 
-          {cast.map((actor) => (
-            <div
-              key={actor.id}
-              className="w-24 flex-shrink-0 text-center"
-            >
+            <i className="ri-loader-4-line animate-spin text-2xl text-[#93939A]"></i>
 
-              <div className="mx-auto h-20 w-20 overflow-hidden rounded-full bg-[#12141C]">
+            <p className="mt-3 text-sm text-[#93939A]">
+              Loading reviews...
+            </p>
 
-                <img
-                  src={actor.image}
-                  alt={actor.name}
-                  className="h-full w-full object-cover"
-                />
+          </div>
+        )}
 
-              </div>
+        {!reviewsLoading && reviewsError && (
+          <div className="border-t border-[#27272A] py-8">
 
-              <p className="mt-3 text-sm font-medium text-[#F4F4F5]">
-                {actor.name}
-              </p>
+            <div className="flex items-center gap-2 text-sm text-[#93939A]">
 
-              <p className="mt-1 text-xs leading-relaxed text-[#93939A]">
-                {actor.role}
+              <i className="ri-error-warning-line"></i>
+
+              <span>
+                {reviewsError}
+              </span>
+
+            </div>
+
+          </div>
+        )}
+
+        {!reviewsLoading &&
+          !reviewsError &&
+          reviews.length === 0 && (
+            <div className="border-t border-[#27272A] py-10">
+
+              <p className="text-sm text-[#93939A]">
+                No reviews yet. Be the first to review this title.
               </p>
 
             </div>
-          ))}
+          )}
 
-        </div>
+        {!reviewsLoading &&
+          !reviewsError &&
+          reviews.length > 0 && (
+            <div className="max-w-3xl">
+
+              {reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="border-t border-[#27272A] py-6"
+                >
+
+                  <ReviewCard
+                    username={
+                      review.user?.name || 'User'
+                    }
+                    avatar={
+                      review.user?.avatarUrl
+                    }
+                    poster={movie.poster}
+                    rating={review.rating}
+                    date={formatReviewDate(
+                      review.createdAt
+                    )}
+                    review={review.content}
+                    likes={review.likeCount || 0}
+                    isLiked={likedReviews.includes(
+                      review.id
+                    )}
+                    isProcessing={processingLikes.includes(
+                      review.id
+                    )}
+                    onLike={() =>
+                      handleReviewLike(review.id)
+                    }
+                    showPoster={false}
+                  />
+
+                  {review.containsSpoiler && (
+                    <p className="mt-3 text-xs text-[#93939A]">
+                      <i className="ri-alert-line mr-1"></i>
+                      Contains spoilers
+                    </p>
+                  )}
+
+                </div>
+              ))}
+
+            </div>
+          )}
 
       </section>
 
-      {/* User review */}
-      {reviews.length > 0 && (
-        <section className="container mx-auto px-6 pb-12">
-
-          <div className="mb-6">
-
-            <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
-              Your Review
-            </p>
-
-            <h2 className="mt-2 text-2xl font-bold sm:text-3xl">
-              Your thoughts
-            </h2>
-
-          </div>
-
-          <div className="max-w-2xl">
-
-            {reviews.map((review) => (
-              <article
-                key={review.id}
-                className="border-t border-[#27272A] py-6"
-              >
-
-                <div className="flex items-center justify-between gap-4">
-
-                  <div className="flex items-center gap-3">
-
-                    <img
-                      src={review.profile}
-                      alt={review.username}
-                      className="h-9 w-9 rounded-full object-cover"
-                    />
-
-                    <div>
-
-                      <p className="text-sm font-semibold">
-                        {review.username}
-                      </p>
-
-                      <p className="text-xs text-[#93939A]">
-                        Watched {review.reviewDate}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <div className="flex items-center gap-1">
-
-                    <i className="ri-star-fill text-yellow-400"></i>
-
-                    <span className="text-sm font-semibold">
-                      {review.rating}/5
-                    </span>
-
-                  </div>
-
-                </div>
-
-                <p className="mt-4 text-sm leading-7 text-[#D4D4D8]">
-                  {review.reviewText}
-                </p>
-
-                {review.liked && (
-                  <div className="mt-3 flex items-center gap-1.5 text-xs text-[#93939A]">
-
-                    <i className="ri-heart-fill text-red-400"></i>
-
-                    <span>
-                      You liked this movie
-                    </span>
-
-                  </div>
-                )}
-
-                {review.containsSpoiler && (
-                  <p className="mt-3 text-xs text-[#93939A]">
-                    Contains spoilers
-                  </p>
-                )}
-
-              </article>
-            ))}
-
-          </div>
-
-        </section>
-      )}
-
       {/* Popular reviews */}
+
       <PopularReviews compact />
 
       {/* Similar movies */}
-      <SimilarMovies
-        movieId={id}
-      />
+
+      <SimilarMovies />
 
       {/* Review modal */}
+
       <ReviewModal
         isOpen={isReviewOpen}
         onClose={() => setIsReviewOpen(false)}
         onPublish={handleReviewPublished}
+        movie={{
+          title: movie.title,
+          year: movie.year,
+          genre: movie.genre,
+          poster: movie.poster,
+        }}
       />
 
     </main>

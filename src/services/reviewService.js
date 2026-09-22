@@ -1,8 +1,11 @@
-
 import { apiRequest } from './api';
 
 export function getMovieReviews(movieId) {
   return apiRequest(`/api/movies/${movieId}/reviews`);
+}
+
+export function getMyReviews() {
+  return apiRequest('/api/reviews/me');
 }
 
 export function createMovieReview(movieId, data) {

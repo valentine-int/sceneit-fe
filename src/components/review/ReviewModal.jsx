@@ -16,9 +16,26 @@ function ReviewModal({
   const [errorMessage, setErrorMessage] = React.useState('');
   const [isPublishing, setIsPublishing] = React.useState(false);
 
+  const resetForm = () => {
+    setRating(0);
+    setReviewText('');
+    setLiked(false);
+    setContainsSpoiler(false);
+    setErrorMessage('');
+  };
+
+  const handleClose = () => {
+    if (isPublishing) {
+      return;
+    }
+
+    resetForm();
+    onClose();
+  };
+
   const handlePublish = async () => {
     if (rating === 0) {
-      setErrorMessage('Please give this film a rating.');
+      setErrorMessage('Please give this title a rating.');
       return;
     }
 
@@ -37,7 +54,12 @@ function ReviewModal({
         liked,
         containsSpoiler,
       });
+
+      resetForm();
+      onClose();
     } catch (error) {
+      console.error('REVIEW PUBLISH ERROR:', error);
+
       setErrorMessage(
         error.message ||
           'Failed to publish your review.'
@@ -56,15 +78,19 @@ function ReviewModal({
 
       <div className="relative w-full max-w-3xl rounded-2xl bg-[#F4F4F5] p-6 text-[#090A0F] shadow-2xl">
 
+        {/* Close */}
+
         <button
           type="button"
-          onClick={onClose}
+          onClick={handleClose}
           disabled={isPublishing}
           className="absolute right-5 top-5 text-[#71717A] transition-colors hover:text-[#090A0F] disabled:cursor-not-allowed disabled:opacity-50"
           aria-label="Close review modal"
         >
           <i className="ri-close-line text-2xl"></i>
         </button>
+
+        {/* Header */}
 
         <div className="pr-10">
 
@@ -73,10 +99,12 @@ function ReviewModal({
           </h2>
 
           <p className="mt-1 text-sm text-[#71717A]">
-            Share your thoughts about this film.
+            Share your thoughts about this title.
           </p>
 
         </div>
+
+        {/* Movie info */}
 
         <div className="mt-6 flex gap-4">
 
@@ -110,6 +138,8 @@ function ReviewModal({
               {movie?.genre || 'Film'}
             </p>
 
+            {/* Like review */}
+
             <button
               type="button"
               onClick={() => setLiked(!liked)}
@@ -129,9 +159,13 @@ function ReviewModal({
                 } text-sm`}
               ></i>
 
-              <span>Like</span>
+              <span>
+                Like
+              </span>
 
             </button>
+
+            {/* Rating */}
 
             <div className="mt-2 flex items-center gap-0.5">
 
@@ -165,6 +199,8 @@ function ReviewModal({
 
         </div>
 
+        {/* Review text */}
+
         <div className="mt-5 w-full">
 
           <textarea
@@ -175,17 +211,21 @@ function ReviewModal({
               setErrorMessage('');
             }}
             disabled={isPublishing}
-            placeholder="Write your thoughts about this film..."
+            placeholder="Write your thoughts about this title..."
             className="block w-full resize-none rounded-xl border border-[#D4D4D8] bg-white p-4 text-sm leading-6 text-[#090A0F] outline-none transition-colors placeholder:text-[#A1A1AA] focus:border-[#090A0F] disabled:cursor-not-allowed disabled:bg-[#F4F4F5]"
           />
 
         </div>
+
+        {/* Error */}
 
         {errorMessage && (
           <p className="mt-3 text-xs text-red-500">
             {errorMessage}
           </p>
         )}
+
+        {/* Footer */}
 
         <div className="mt-4 flex items-center justify-between border-t border-[#E4E4E7] pt-4">
 
@@ -195,9 +235,7 @@ function ReviewModal({
               type="checkbox"
               checked={containsSpoiler}
               onChange={(event) =>
-                setContainsSpoiler(
-                  event.target.checked
-                )
+                setContainsSpoiler(event.target.checked)
               }
               disabled={isPublishing}
               className="h-4 w-4 cursor-pointer rounded border-[#D4D4D8] accent-[#090A0F]"
