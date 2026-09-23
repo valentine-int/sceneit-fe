@@ -3,14 +3,16 @@ import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { logoutUser } from '../../services/authService';
 import 'remixicon/fonts/remixicon.css';
+import { createMovieReview, likeReview } from '../../services/reviewService';
+import { getMovieDetail } from '../../services/movieService';
 
 import Button from '../common/Button';
 import ReviewPicker from '../review/ReviewPicker';
 import ReviewModal from '../review/ReviewModal';
-
+import NotificationBell from './NotificationBell';
 import profile from '../../assets/profile.jpg';
 
-import { searchMulti } from '../../services/tmdb';
+import { searchMultiContent } from '../../services/movieService';
 import { getTmdbImage } from '../../utils/tmdbImages';
 
 function Navbar() {
@@ -49,6 +51,7 @@ function Navbar() {
   const [isReviewPickerOpen, setIsReviewPickerOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [selectedTitle, setSelectedTitle] = useState(null);
+  const [reviewPublishError, setReviewPublishError] = useState('');
 
   // =========================
   // QUICK SEARCH
@@ -66,20 +69,9 @@ function Navbar() {
 
       try {
 
-        setIsSearching(true);
-        setIsSearchOpen(true);
-
-        const data = await searchMulti(search);
-
-        const results = (data.results || [])
-          .filter(
-            (item) =>
-              item.media_type === 'movie' ||
-              item.media_type === 'tv'
-          )
-          .slice(0, 6);
-
-        setSearchResults(results);
+    const data = await searchMultiContent(search);
+    const results = (data.results || []).slice(0, 6);
+    setSearchResults(results);
 
       } catch (error) {
 
@@ -135,42 +127,30 @@ function Navbar() {
   // SELECT REVIEW TITLE
   // =========================
 
-  const handleSelectReviewTitle = (item) => {
+    const handleSelectReviewTitle = async (item) => {
+      const isSeries = item.type === 'series';
 
-    const isSeries = item.media_type === 'tv';
+      const baseMovie = {
+        id: item.tmdbId, // sementara tmdbId, ditimpa localId setelah cache
+        title: item.title,
+        year: item.releaseYear,
+        type: isSeries ? 'Series' : 'Movie',
+        genre: '',
+        poster: item.posterPath ? getTmdbImage(item.posterPath, 'w500') : null,
+      };
 
-    const selectedMovie = {
-      id: item.id,
+      setSelectedTitle(baseMovie);
+      setIsReviewPickerOpen(false);
+      setIsReviewModalOpen(true);
 
-      title: isSeries
-        ? item.name
-        : item.title,
-
-      year: isSeries
-        ? item.first_air_date?.slice(0, 4)
-        : item.release_date?.slice(0, 4),
-
-      type: isSeries
-        ? 'Series'
-        : 'Movie',
-
-      genre: '',
-
-      poster: item.poster_path
-        ? getTmdbImage(
-            item.poster_path,
-            'w500'
-          )
-        : null,
+      try {
+        const detail = await getMovieDetail(item.tmdbId, isSeries ? 'series' : 'movie');
+        setSelectedTitle((current) => (current ? { ...current, id: detail.id } : current));
+      } catch (error) {
+        console.error('NAVBAR CACHE MOVIE ERROR:', error);
+        setReviewPublishError('Failed to prepare this title for review.');
+      }
     };
-
-    setSelectedTitle(selectedMovie);
-
-    setIsReviewPickerOpen(false);
-    setIsReviewModalOpen(true);
-
-  };
-
   // =========================
   // CLOSE REVIEW MODAL
   // =========================
@@ -181,6 +161,33 @@ function Navbar() {
     setSelectedTitle(null);
 
   };
+
+  // Hangdle Navbar Review Publish
+  const handleNavbarReviewPublish = async (reviewData) => {
+  if (!user) {
+    throw new Error('Please log in to write a review.');
+  }
+  if (!selectedTitle?.id) {
+    throw new Error('Movie information is not ready yet.');
+  }
+  try {
+    setReviewPublishError('');
+    const result = await createMovieReview(selectedTitle.id, {
+      rating: reviewData.rating,
+      content: reviewData.reviewText,
+      containsSpoiler: reviewData.containsSpoiler,
+    });
+    const createdReview = result.review;
+    if (reviewData.liked && createdReview?.id) {
+      await likeReview(createdReview.id);
+    }
+    handleCloseReviewModal();
+  } catch (error) {
+    console.error('NAVBAR REVIEW ERROR:', error);
+    setReviewPublishError(error.message || 'Failed to publish your review.');
+    throw error; // penting: dilempar lagi supaya ReviewModal tetap terbuka & menampilkan errorMessage
+  }
+};
 
   // =========================
   // NAV LINK STYLE
@@ -239,9 +246,34 @@ function Navbar() {
 
               <NavLink
                 to="/series"
-                className={navLinkClass}
+                onClick={() =>
+                  setIsMobileMenuOpen(false)
+                }
+                className={({ isActive }) =>
+                  `border-b border-[#27272A]/50 py-3 text-sm font-medium ${
+                    isActive
+                      ? 'text-[#F4F4F5]'
+                      : 'text-[#93939A]'
+                  }`
+                }
               >
                 Series
+              </NavLink>
+
+              <NavLink
+                to="/feed"
+                onClick={() =>
+                  setIsMobileMenuOpen(false)
+                }
+                className={({ isActive }) =>
+                  `border-b border-[#27272A]/50 py-3 text-sm font-medium ${
+                    isActive
+                      ? 'text-[#F4F4F5]'
+                      : 'text-[#93939A]'
+                  }`
+                }
+              >
+                Feed
               </NavLink>
 
               <NavLink
@@ -309,89 +341,38 @@ function Navbar() {
                     searchResults.length > 0 && (
                       <div className="py-2">
 
-                        {searchResults.map((item) => {
-
-                          const isSeries =
-                            item.media_type === 'tv';
-
-                          const title = isSeries
-                            ? item.name
-                            : item.title;
-
-                          const year = isSeries
-                            ? item.first_air_date?.slice(0, 4)
-                            : item.release_date?.slice(0, 4);
-
-                          return (
-                            <Link
-                              key={`${item.media_type}-${item.id}`}
-                              to={
-                                isSeries
-                                  ? `/series/${item.id}`
-                                  : `/movie/${item.id}`
-                              }
-                              onClick={
-                                handleSearchResultClick
-                              }
-                              className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[#1A1C24]"
-                            >
-
-                              {/* POSTER */}
-
-                              <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md bg-[#090A0F]">
-
-                                {item.poster_path ? (
-                                  <img
-                                    src={getTmdbImage(
-                                      item.poster_path,
-                                      'w92'
-                                    )}
-                                    alt={title}
-                                    className="h-full w-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center">
-
-                                    <i className="ri-movie-2-line text-sm text-[#52525B]"></i>
-
-                                  </div>
-                                )}
-
-                              </div>
-
-                              {/* INFO */}
-
-                              <div className="min-w-0 flex-1">
-
-                                <p className="truncate text-sm font-medium text-[#F4F4F5]">
-                                  {title}
-                                </p>
-
-                                <div className="mt-1 flex items-center gap-2 text-xs text-[#93939A]">
-
-                                  <span>
-                                    {year || 'N/A'}
-                                  </span>
-
-                                  <span>
-                                    •
-                                  </span>
-
-                                  <span>
-                                    {isSeries
-                                      ? 'Series'
-                                      : 'Movie'}
-                                  </span>
-
-                                </div>
-
-                              </div>
-
-                              <i className="ri-arrow-right-s-line text-[#52525B]"></i>
-
-                            </Link>
-                          );
-                        })}
+                  {searchResults.map((item) => {
+              const isSeries = item.type === 'series';
+              const title = item.title;
+              const year = item.releaseYear;
+              return (
+                <Link
+                  key={`${item.type}-${item.tmdbId}`}
+                  to={isSeries ? `/series/${item.tmdbId}` : `/movie/${item.tmdbId}`}
+                  onClick={handleSearchResultClick}
+                  className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[#1A1C24]"
+                >
+                  <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md bg-[#090A0F]">
+                    {item.posterPath ? (
+                      <img src={getTmdbImage(item.posterPath, 'w92')} alt={title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <i className="ri-movie-2-line text-sm text-[#52525B]"></i>
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-[#F4F4F5]">{title}</p>
+                    <div className="mt-1 flex items-center gap-2 text-xs text-[#93939A]">
+                      <span>{year || 'N/A'}</span>
+                      <span>•</span>
+                      <span>{isSeries ? 'Series' : 'Movie'}</span>
+                    </div>
+                  </div>
+                  <i className="ri-arrow-right-s-line text-[#52525B]"></i>
+                </Link>
+              );
+            })}
 
                       </div>
                     )}
@@ -414,6 +395,11 @@ function Navbar() {
               )}
 
             </div>
+
+            {/* =========================
+                NOTIFICATIONS
+            ========================= */}
+            <NotificationBell />
 
             {/* =========================
                 + REVIEW
@@ -626,86 +612,38 @@ function Navbar() {
                       searchResults.length > 0 && (
                         <div className="max-h-72 overflow-y-auto py-2">
 
-                          {searchResults.map((item) => {
-
-                            const isSeries =
-                              item.media_type === 'tv';
-
-                            const title = isSeries
-                              ? item.name
-                              : item.title;
-
-                            const year = isSeries
-                              ? item.first_air_date?.slice(0, 4)
-                              : item.release_date?.slice(0, 4);
-
-                            return (
-                              <Link
-                                key={`${item.media_type}-${item.id}`}
-                                to={
-                                  isSeries
-                                    ? `/series/${item.id}`
-                                    : `/movie/${item.id}`
-                                }
-                                onClick={
-                                  handleSearchResultClick
-                                }
-                                className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[#1A1C24]"
-                              >
-
-                                <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md bg-[#090A0F]">
-
-                                  {item.poster_path ? (
-                                    <img
-                                      src={getTmdbImage(
-                                        item.poster_path,
-                                        'w92'
-                                      )}
-                                      alt={title}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="flex h-full w-full items-center justify-center">
-
-                                      <i className="ri-movie-2-line text-sm text-[#52525B]"></i>
-
-                                    </div>
-                                  )}
-
-                                </div>
-
-                                <div className="min-w-0 flex-1">
-
-                                  <p className="truncate text-sm font-medium text-[#F4F4F5]">
-                                    {title}
-                                  </p>
-
-                                  <div className="mt-1 flex items-center gap-2 text-xs text-[#93939A]">
-
-                                    <span>
-                                      {year || 'N/A'}
-                                    </span>
-
-                                    <span>
-                                      •
-                                    </span>
-
-                                    <span>
-                                      {isSeries
-                                        ? 'Series'
-                                        : 'Movie'}
-                                    </span>
-
-                                  </div>
-
-                                </div>
-
-                                <i className="ri-arrow-right-s-line text-[#52525B]"></i>
-
-                              </Link>
-                            );
-                          })}
-
+                {searchResults.map((item) => {
+                const isSeries = item.type === 'series';
+                const title = item.title;
+                const year = item.releaseYear;
+                return (
+                  <Link
+                    key={`${item.type}-${item.tmdbId}`}
+                    to={isSeries ? `/series/${item.tmdbId}` : `/movie/${item.tmdbId}`}
+                    onClick={handleSearchResultClick}
+                    className="flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-[#1A1C24]"
+                  >
+                    <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded-md bg-[#090A0F]">
+                      {item.posterPath ? (
+                        <img src={getTmdbImage(item.posterPath, 'w92')} alt={title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <i className="ri-movie-2-line text-sm text-[#52525B]"></i>
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-[#F4F4F5]">{title}</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-[#93939A]">
+                        <span>{year || 'N/A'}</span>
+                        <span>•</span>
+                        <span>{isSeries ? 'Series' : 'Movie'}</span>
+                      </div>
+                    </div>
+                    <i className="ri-arrow-right-s-line text-[#52525B]"></i>
+                  </Link>
+                );
+              })}
                         </div>
                       )}
 
@@ -745,6 +683,7 @@ function Navbar() {
                 >
                   Home
                 </NavLink>
+                
 
                 <NavLink
                   to="/movies"
@@ -779,6 +718,23 @@ function Navbar() {
                 </NavLink>
 
                 <NavLink
+                  to="/feed"
+                  onClick={() =>
+                    setIsMobileMenuOpen(false)
+                  }
+                  className={({ isActive }) =>
+                    `border-b border-[#27272A]/50 py-3 text-sm font-medium ${
+                      isActive
+                        ? 'text-[#F4F4F5]'
+                        : 'text-[#93939A]'
+                    }`
+                  }
+                >
+                  Feed
+                </NavLink>
+            
+
+                <NavLink
                   to="/explore"
                   onClick={() =>
                     setIsMobileMenuOpen(false)
@@ -799,7 +755,7 @@ function Navbar() {
               {/* MOBILE ACTIONS */}
 
               <div className="mt-5 flex items-center justify-between gap-3">
-
+                 <NotificationBell />
                 <Button
                   onClick={handleOpenReview}
                   className="flex-1"
@@ -861,9 +817,7 @@ function Navbar() {
         isOpen={isReviewModalOpen}
         onClose={handleCloseReviewModal}
         movie={selectedTitle}
-        onPublish={() => {
-          handleCloseReviewModal();
-        }}
+        onPublish={handleNavbarReviewPublish}
       />
 
     </>

@@ -1,10 +1,6 @@
 import { useEffect, useState } from 'react';
 import { exploreContent } from '../services/movieService';
-
-import {
-  getMovieGenres,
-  getSeriesGenres,
-} from '../services/tmdb';
+import { getGenres } from '../services/movieService';
 
 function useExplore() {
 
@@ -43,15 +39,10 @@ function useExplore() {
     async function fetchGenres() {
 
       try {
-
-        const [
-          movieGenresData,
-          seriesGenresData,
-        ] = await Promise.all([
-          getMovieGenres(),
-          getSeriesGenres(),
+        const [movieGenresData, seriesGenresData] = await Promise.all([
+          getGenres('movie'),
+          getGenres('series'),
         ]);
-
         const movieGenreList =
           movieGenresData.genres || [];
 

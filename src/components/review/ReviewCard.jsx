@@ -13,6 +13,7 @@ function ReviewCard({
   isProcessing = false,
   onLike,
   showPoster = true,
+  hideLike = false,
 }) {
   return (
     <article className="flex gap-4 rounded-xl border border-[#27272A] bg-[#12141C] p-4 sm:gap-5 sm:p-5">
@@ -98,40 +99,20 @@ function ReviewCard({
         </p>
 
         {/* Like */}
-
-        <button
-          type="button"
-          onClick={onLike}
-          disabled={isProcessing}
-          className={`mt-5 flex items-center gap-1.5 text-xs transition-colors ${
-            isLiked
-              ? 'text-red-400'
-              : 'text-[#93939A] hover:text-[#F4F4F5]'
-          } ${
-            isProcessing
-              ? 'cursor-not-allowed opacity-60'
-              : ''
-          }`}
-          aria-label={
-            isLiked
-              ? 'Unlike review'
-              : 'Like review'
-          }
-        >
-
-          <i
-            className={`${
-              isLiked
-                ? 'ri-heart-fill'
-                : 'ri-heart-line'
-            } text-base`}
-          ></i>
-
-          <span>
-            {likes}
-          </span>
-
-        </button>
+        {!hideLike && (
+          <button
+            type="button"
+            onClick={onLike}
+            disabled={isProcessing}
+            className={`mt-5 flex items-center gap-1.5 text-xs transition-colors ${
+              isLiked ? 'text-red-400' : 'text-[#93939A] hover:text-[#F4F4F5]'
+            } ${isProcessing ? 'cursor-not-allowed opacity-60' : ''}`}
+            aria-label={isLiked ? 'Unlike review' : 'Like review'}
+          >
+            <i className={`${isLiked ? 'ri-heart-fill' : 'ri-heart-line'} text-base`}></i>
+            <span>{likes}</span>
+          </button>
+        )}
 
       </div>
 

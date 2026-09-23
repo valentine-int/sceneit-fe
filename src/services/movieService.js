@@ -106,3 +106,17 @@ export function exploreContent({
     `/api/movies/explore?${params.toString()}`
   );
 }
+
+export function searchMultiContent(query, page = 1) {
+  const params = new URLSearchParams({ query, page });
+  return apiRequest(`/api/movies/search-multi?${params.toString()}`);
+}
+
+export function getGenres(type = 'movie') {
+  return apiRequest(`/api/movies/genres?type=${type}`);
+}
+
+export function getTmdbReviews(id, type = 'movie', page = 1) {
+  const params = new URLSearchParams({ type, page });
+  return apiRequest(`/api/movies/${id}/tmdb-reviews?${params.toString()}`);
+}

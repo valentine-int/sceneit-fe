@@ -1,128 +1,95 @@
 import React, { useEffect, useState } from 'react';
 import 'remixicon/fonts/remixicon.css';
-
 import MovieCard from '../../components/movie/MovieCard';
 import { getWatchlist } from '../../services/watchlistService';
 import { getTmdbImage } from '../../utils/tmdbImages';
+import dummyPoster from '../../assets/Poster1.jpg';
 
 function MyWatchlist() {
   const [watchlist, setWatchlist] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     async function loadWatchlist() {
       try {
-        setIsLoading(true);
-        setErrorMessage('');
-
+        setLoading(true);
+        setError('');
         const result = await getWatchlist();
-
         setWatchlist(result.watchlist || []);
-      } catch (error) {
-        console.error('WATCHLIST LOAD ERROR:', error);
-
-        setErrorMessage(
-          error.message || 'Failed to load your watchlist.'
-        );
+      } catch (err) {
+        console.error('MY WATCHLIST LOAD ERROR:', err);
+        setError(err.message || 'Failed to load your watchlist.');
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     }
-
     loadWatchlist();
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
-
-      <section className="container mx-auto px-6 pb-16 pt-32">
-
-        <div className="mb-8">
-
-          <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
+    <main className="min-h-screen bg-[#090A0F] px-6 py-32 text-[#F4F4F5]">
+      <section className="container mx-auto">
+        {/* HEADER */}
+        <div className="mb-10">
+          <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#93939A]">
             Your collection
           </p>
-
-          <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
-            My Watchlist
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            Watchlist
           </h1>
-
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#93939A]">
-            Movies and series you want to watch later.
+            Movies and series you're planning to watch.
           </p>
-
         </div>
 
-        {isLoading && (
+        {/* LOADING */}
+        {loading && (
           <div className="py-20 text-center">
-
-            <p className="text-sm text-[#93939A]">
-              Loading your watchlist...
-            </p>
-
+            <i className="ri-loader-4-line animate-spin text-3xl text-[#93939A]"></i>
+            <p className="mt-4 text-sm text-[#93939A]">Loading watchlist...</p>
           </div>
         )}
 
-        {!isLoading && errorMessage && (
+        {/* ERROR */}
+        {!loading && error && (
           <div className="py-20 text-center">
-
             <i className="ri-error-warning-line text-3xl text-[#52525B]"></i>
-
-            <p className="mt-4 text-sm text-[#93939A]">
-              {errorMessage}
-            </p>
-
+            <p className="mt-4 text-sm text-[#93939A]">{error}</p>
           </div>
         )}
 
-        {!isLoading && !errorMessage && watchlist.length > 0 && (
-          <div className="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-
-            {watchlist.map((item) => {
-              const movie = item.movie;
-
-              const poster = getTmdbImage(movie.posterPath);
-
-              const type =
-                movie.type === 'series'
-                  ? 'Series'
-                  : 'Movie';
-
-              return (
-                <MovieCard
-                  key={item.id}
-                  id={movie.tmdbId}
-                  title={movie.title}
-                  year={movie.releaseYear}
-                  rating={movie.rating}
-                  type={type}
-                  poster={poster}
-                />
-              );
-            })}
-
-          </div>
-        )}
-
-        {!isLoading && !errorMessage && watchlist.length === 0 && (
+        {/* EMPTY */}
+        {!loading && !error && watchlist.length === 0 && (
           <div className="py-20 text-center">
-
             <i className="ri-bookmark-line text-3xl text-[#52525B]"></i>
-
             <p className="mt-4 text-sm text-[#93939A]">
-              Your watchlist is empty.
+              You haven't added anything to your watchlist yet.
             </p>
-
-            <p className="mt-2 text-xs text-[#52525B]">
-              Add movies or series to your watchlist and they will appear here.
-            </p>
-
           </div>
         )}
 
+        {/* GRID */}
+        {!loading && !error && watchlist.length > 0 && (
+          <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
+            {watchlist.map((item) => (
+              <MovieCard
+                key={item.id}
+                id={item.movie?.tmdbId}
+                title={item.movie?.title}
+                year={item.movie?.releaseYear || 'N/A'}
+                rating="N/A"
+                poster={
+                  item.movie?.posterPath
+                    ? getTmdbImage(item.movie.posterPath, 'w500')
+                    : dummyPoster
+                }
+                type={item.movie?.type === 'series' ? 'Series' : 'Movie'}
+              />
+            ))}
+          </div>
+        )}
       </section>
-
     </main>
   );
 }

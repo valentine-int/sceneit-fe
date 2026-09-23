@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
+import { getFavorites } from '../services/favoriteService';
 
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
-import PopularReviews from '../components/review/PopularReviews';
 import SimilarMovies from '../components/movie/SimilarMovies';
 import ReviewCard from '../components/review/ReviewCard';
 import ReviewModal from '../components/review/ReviewModal';
+import TmdbReviews from '../components/review/TmdbReviews';
 
 import {
   getMovieReviews,
@@ -17,11 +18,18 @@ import {
 } from '../services/reviewService';
 
 import {
+  addToFavorites,
+  removeFromFavorites,
+} from '../services/favoriteService';
+
+import {
+  getWatchlist,
   addToWatchlist,
   removeFromWatchlist,
 } from '../services/watchlistService';
 
 import {
+  getWatched,
   addToWatched,
   removeFromWatched,
 } from '../services/watchedService';
@@ -79,6 +87,55 @@ function MovieDetail() {
     }
 
     loadReviews();
+  }, [data]);
+
+  // Sync favorite status once movie id is known
+useEffect(() => {
+  async function syncFavoriteStatus() {
+    if (!data?.id) {
+      setIsLiked(false);
+      return;
+    }
+    try {
+      const result = await getFavorites();
+      const favorites = result.favorites || [];
+      const exists = favorites.some(
+        (item) => Number(item.movieId) === Number(data.id)
+      );
+      setIsLiked(exists);
+    } catch (error) {
+      console.error('FAVORITE SYNC ERROR:', error);
+      setIsLiked(false);
+    }
+  }
+  syncFavoriteStatus();
+}, [data]);
+
+  useEffect(() => {
+    async function syncWatchStatus() {
+      if (!data?.id) {
+        setIsWatchlisted(false);
+        setIsWatched(false);
+        return;
+      }
+      try {
+        const [watchlistResult, watchedResult] = await Promise.all([
+          getWatchlist(),
+          getWatched(),
+        ]);
+        const inWatchlist = (watchlistResult.watchlist || []).some(
+          (item) => Number(item.movieId) === Number(data.id)
+        );
+        const inWatched = (watchedResult.watched || []).some(
+          (item) => Number(item.movieId) === Number(data.id)
+        );
+        setIsWatchlisted(inWatchlist);
+        setIsWatched(inWatched);
+      } catch (error) {
+        console.error('MOVIE WATCH STATUS SYNC ERROR:', error);
+      }
+    }
+    syncWatchStatus();
   }, [data]);
 
   // Format backend createdAt for display
@@ -246,6 +303,24 @@ function MovieDetail() {
     // A watched title is removed from the watchlist by backend
     setIsWatchlisted(false);
   };
+
+      // Add or remove movie from favorites
+    const handleFavorite = async () => {
+      if (!data?.id) {
+        return;
+      }
+      try {
+        if (isLiked) {
+          await removeFromFavorites(data.id);
+          setIsLiked(false);
+        } else {
+          await addToFavorites(data.id);
+          setIsLiked(true);
+        }
+      } catch (error) {
+        console.error('FAVORITE ERROR:', error);
+      }
+    };
 
   if (isLoading) {
     return (
@@ -421,26 +496,21 @@ function MovieDetail() {
             </button>
 
             {/* Movie like */}
-
             <button
               type="button"
-              onClick={() => setIsLiked(!isLiked)}
+              onClick={handleFavorite}
               className={`transition-colors ${
                 isLiked
                   ? 'text-red-400'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
               }`}
-              aria-label="Like movie"
+              aria-label={isLiked ? 'Remove from favorites' : 'Add to favorites'}
             >
-
               <i
                 className={`${
-                  isLiked
-                    ? 'ri-heart-fill'
-                    : 'ri-heart-line'
+                  isLiked ? 'ri-heart-fill' : 'ri-heart-line'
                 } text-xl`}
               ></i>
-
             </button>
 
             {/* Review */}
@@ -632,14 +702,13 @@ function MovieDetail() {
           )}
 
       </section>
-
-      {/* Popular reviews */}
-
-      <PopularReviews compact />
+      
+      {/* TMDB reviews */}
+      <TmdbReviews tmdbId={data.tmdbId} type="movie" />
 
       {/* Similar movies */}
 
-      <SimilarMovies />
+      <SimilarMovies movieId={data.tmdbId} />
 
       {/* Review modal */}
 

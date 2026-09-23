@@ -11,6 +11,10 @@ const setStorage = (key, data) => {
     key,
     JSON.stringify(data)
   );
+
+  window.dispatchEvent(
+    new Event('sceneit-storage')
+  );
 };
 
 // =========================

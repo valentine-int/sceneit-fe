@@ -39,3 +39,7 @@ export function unlikeReview(reviewId) {
     method: 'DELETE',
   });
 }
+
+export function getPopularReviews(limit = 10) {
+  return apiRequest(`/api/reviews/popular?limit=${limit}`);
+}

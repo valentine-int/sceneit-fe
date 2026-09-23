@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import 'remixicon/fonts/remixicon.css';
 
-import { searchMulti } from '../../services/tmdb';
+import { searchMultiContent } from '../../services/movieService';
 import { getTmdbImage } from '../../utils/tmdbImages';
+
 
 
 function ReviewPicker({
@@ -33,16 +34,8 @@ function ReviewPicker({
 
         setLoading(true);
 
-        const data = await searchMulti(search);
-
-        const filteredResults =
-          (data.results || [])
-            .filter((item) => (
-              item.media_type === 'movie' ||
-              item.media_type === 'tv'
-            ))
-            .slice(0, 8);
-
+        const data = await searchMultiContent(search);
+        const filteredResults = (data.results || []).slice(0, 8);
         setResults(filteredResults);
 
       } catch (error) {
@@ -181,24 +174,13 @@ function ReviewPicker({
 
               {results.map((item) => {
 
-                const title =
-                  item.media_type === 'movie'
-                    ? item.title
-                    : item.name;
-
-                const year =
-                  item.media_type === 'movie'
-                    ? item.release_date?.slice(0, 4)
-                    : item.first_air_date?.slice(0, 4);
-
-                const type =
-                  item.media_type === 'movie'
-                    ? 'Movie'
-                    : 'Series';
+                const title = item.title;
+                const year = item.releaseYear;
+                const type = item.type === 'movie' ? 'Movie' : 'Series';
 
                 return (
                   <button
-                    key={`${item.media_type}-${item.id}`}
+                    key={`${item.type}-${item.tmdbId}`}
                     type="button"
                     onClick={() => handleSelect(item)}
                     className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-[#E4E4E7]"
@@ -208,18 +190,16 @@ function ReviewPicker({
 
                     <div className="h-16 w-11 flex-shrink-0 overflow-hidden rounded-md bg-[#E4E4E7]">
 
-                      {item.poster_path ? (
-
-                        <img
-                          src={getTmdbImage(
-                            item.poster_path,
-                            'w92'
-                          )}
-                          alt={title}
-                          className="h-full w-full object-cover"
-                        />
-
-                      ) : (
+                    {item.posterPath ? (
+                      <img
+                        src={getTmdbImage(
+                          item.posterPath,
+                          'w92'
+                        )}
+                        alt={title}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
 
                         <div className="flex h-full w-full items-center justify-center">
                           <i className="ri-movie-2-line text-[#A1A1AA]"></i>
