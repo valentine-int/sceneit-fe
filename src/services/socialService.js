@@ -28,3 +28,7 @@ export function searchUsers(query) {
   const params = new URLSearchParams({ query });
   return apiRequest(`/api/users/search?${params.toString()}`);
 }
+
+export function getPublicUser(userId) {
+  return apiRequest(`/api/users/${userId}`);
+}

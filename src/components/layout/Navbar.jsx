@@ -565,6 +565,18 @@ function Navbar() {
                         Favorite
                       </Link>
 
+                      {user.role === 'admin' && (
+                      
+                      <Link
+                        to="/admin/reports"
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-[#D4D4D8] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+                      >
+                        <i className="ri-shield-star-line"></i>
+                        Admin Panel
+                      </Link>
+                    )}
+
                     </div>
 
                     <div className="border-t border-[#27272A] py-1">

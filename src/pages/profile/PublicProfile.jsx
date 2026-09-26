@@ -11,7 +11,7 @@ import { getWatchlist } from '../../services/watchlistService';
 import { getWatched } from '../../services/watchedService';
 import { getFavorites } from '../../services/favoriteService';
 import { getMyReviews } from '../../services/reviewService';
-import { getFollowStatus, getFollowers, getFollowing } from '../../services/socialService';
+import { getPublicUser, getFollowStatus, getFollowers, getFollowing } from '../../services/socialService';
 import { getTmdbImage } from '../../utils/tmdbImages';
 import { updateProfile } from '../../services/authService';
 
@@ -55,6 +55,7 @@ function PublicProfile() {
   const [favorites, setFavorites] = useState([]);
   const [watchlist, setWatchlist] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [otherUser, setOtherUser] = useState(null);
 
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
@@ -98,6 +99,10 @@ function PublicProfile() {
         );
       }
 
+      if (!isOwnProfile) {
+        requests.push(getPublicUser(profileUserId));
+      }
+
       if (!isOwnProfile && currentUser) {
         requests.push(getFollowStatus(profileUserId));
       }
@@ -122,6 +127,11 @@ function PublicProfile() {
         setFavorites(favoritesResult.favorites || []);
         setWatchlist(watchlistResult.watchlist || []);
         setReviews(reviewsResult.reviews || []);
+      }
+
+      if (!isOwnProfile) {
+        const userResult = results[nextIndex++];
+        setOtherUser(userResult.user);
       }
 
       if (!isOwnProfile && currentUser) {
@@ -181,17 +191,16 @@ function PublicProfile() {
   }
 
   const displayUser = isOwnProfile
-    ? {
-        name: currentUser?.name,
-        avatar: currentUser?.avatarUrl || profile,
-        bio: currentUser?.bio,
-      }
-    : {
-        // Public user data is not available from a dedicated endpoint yet.
-        name: 'User',
-        avatar: profile,
-        bio: null,
-      };
+  ? {
+      name: currentUser?.name,
+      avatar: currentUser?.avatarUrl || profile,
+      bio: currentUser?.bio,
+    }
+  : {
+      name: otherUser?.name || 'User',
+      avatar: otherUser?.avatarUrl || profile,
+      bio: otherUser?.bio || null,
+    };
 
   const stats = [
     ...(isOwnProfile

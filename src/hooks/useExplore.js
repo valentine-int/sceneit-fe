@@ -4,35 +4,24 @@ import { getGenres } from '../services/movieService';
 
 function useExplore() {
 
-  // =========================
   // FILTER STATE
-  // =========================
-
   const [search, setSearch] = useState('');
   const [type, setType] = useState('');
   const [genre, setGenre] = useState('');
   const [year, setYear] = useState('');
   const [rating, setRating] = useState('');
 
-  // =========================
   // GENRE STATE
-  // =========================
-
   const [genres, setGenres] = useState([]);
   const [movieGenres, setMovieGenres] = useState([]);
   const [seriesGenres, setSeriesGenres] = useState([]);
 
-  // =========================
   // RESULT STATE
-  // =========================
-
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // =========================
   // GET GENRES
-  // =========================
 
   useEffect(() => {
 
@@ -94,10 +83,7 @@ setGenres(uniqueGenres);
 
   }, []);
 
-  // =========================
   // SEARCH
-  // =========================
-
   const handleSearch = async () => {
 
   if (!search.trim()) {
@@ -140,10 +126,7 @@ const data = await exploreContent({
 
 };
 
-  // =========================
   // RESET
-  // =========================
-
   const handleReset = () => {
 
     setSearch('');

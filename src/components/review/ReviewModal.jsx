@@ -7,12 +7,14 @@ function ReviewModal({
   onClose,
   onPublish,
   movie,
-  initialReview = null, // { rating, content, containsSpoiler } => edit mode
+  initialReview = null,
 }) {
   const isEditMode = Boolean(initialReview);
 
   const [rating, setRating] = React.useState(initialReview?.rating || 0);
-  const [reviewText, setReviewText] = React.useState(initialReview?.content || '');
+  const [reviewText, setReviewText] = React.useState(
+    initialReview?.content || ''
+  );
   const [liked, setLiked] = React.useState(false);
   const [containsSpoiler, setContainsSpoiler] = React.useState(
     initialReview?.containsSpoiler || false
@@ -20,7 +22,6 @@ function ReviewModal({
   const [errorMessage, setErrorMessage] = React.useState('');
   const [isPublishing, setIsPublishing] = React.useState(false);
 
-  // Re-sync form whenever the modal is opened with new initial data
   React.useEffect(() => {
     if (isOpen) {
       setRating(initialReview?.rating || 0);
@@ -44,9 +45,11 @@ function ReviewModal({
     if (isPublishing) {
       return;
     }
+
     if (!isEditMode) {
       resetForm();
     }
+
     onClose();
   };
 
@@ -55,22 +58,27 @@ function ReviewModal({
       setErrorMessage('Please give this title a rating.');
       return;
     }
+
     if (reviewText.trim() === '') {
       setErrorMessage('Please write your review.');
       return;
     }
+
     try {
       setErrorMessage('');
       setIsPublishing(true);
+
       await onPublish({
         rating,
         reviewText: reviewText.trim(),
         liked,
         containsSpoiler,
       });
+
       if (!isEditMode) {
         resetForm();
       }
+
       onClose();
     } catch (error) {
       console.error('REVIEW PUBLISH ERROR:', error);
@@ -87,7 +95,6 @@ function ReviewModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
       <div className="relative w-full max-w-3xl rounded-2xl bg-[#F4F4F5] p-6 text-[#090A0F] shadow-2xl">
-        {/* Close */}
         <button
           type="button"
           onClick={handleClose}
@@ -98,11 +105,11 @@ function ReviewModal({
           <i className="ri-close-line text-2xl"></i>
         </button>
 
-        {/* Header */}
         <div className="pr-10">
           <h2 className="text-2xl font-bold">
             {isEditMode ? 'Edit Your Review' : 'Write a Review'}
           </h2>
+
           <p className="mt-1 text-sm text-[#71717A]">
             {isEditMode
               ? 'Update your rating or review text.'
@@ -110,7 +117,6 @@ function ReviewModal({
           </p>
         </div>
 
-        {/* Movie info */}
         <div className="mt-6 flex gap-4">
           <div className="w-20 flex-shrink-0">
             <div className="aspect-[2/3] overflow-hidden rounded-lg bg-[#E4E4E7]">
@@ -121,55 +127,68 @@ function ReviewModal({
               />
             </div>
           </div>
+
           <div className="min-w-0 flex-1">
             <h3 className="text-lg font-bold">
               {movie?.title || 'Movie'}{' '}
-              <span className="font-normal text-[#71717A]">({movie?.year || 'N/A'})</span>
+              <span className="font-normal text-[#71717A]">
+                ({movie?.year || 'N/A'})
+              </span>
             </h3>
-            <p className="mt-1 text-sm text-[#71717A]">{movie?.genre || 'Film'}</p>
 
-            {!isEditMode && (
-              <button
-                type="button"
-                onClick={() => setLiked(!liked)}
-                disabled={isPublishing}
-                className={`mt-3 flex items-center gap-1.5 py-1 text-xs transition-colors ${
-                  liked ? 'text-[#090A0F]' : 'text-[#71717A] hover:text-[#090A0F]'
-                }`}
-              >
-                <i className={`${liked ? 'ri-heart-fill' : 'ri-heart-line'} text-sm`}></i>
-                <span>Like</span>
-              </button>
-            )}
+            <p className="mt-1 text-sm text-[#71717A]">
+              {movie?.genre || 'Film'}
+            </p>
 
-            {/* Rating */}
-            <div className="mt-2 flex items-center gap-0.5">
-              {[1, 2, 3, 4, 5].map((star) => (
+            <div className="mt-2 flex items-center gap-4">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => {
+                      setRating(star);
+                      setErrorMessage('');
+                    }}
+                    disabled={isPublishing}
+                    className="p-0.5 transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                    aria-label={`Rate ${star} out of 5`}
+                  >
+                    <i
+                      className={`${
+                        star <= rating
+                          ? 'ri-star-fill text-yellow-400'
+                          : 'ri-star-line text-[#A1A1AA]'
+                      } text-xl`}
+                    ></i>
+                  </button>
+                ))}
+              </div>
+
+              {!isEditMode && (
                 <button
-                  key={star}
                   type="button"
-                  onClick={() => {
-                    setRating(star);
-                    setErrorMessage('');
-                  }}
+                  onClick={() => setLiked(!liked)}
                   disabled={isPublishing}
-                  className="p-0.5 transition-transform hover:scale-110 disabled:cursor-not-allowed"
-                  aria-label={`Rate ${star} out of 5`}
+                  className={`flex items-center gap-1.5 text-xs transition-colors ${
+                    liked
+                      ? 'text-[#090A0F]'
+                      : 'text-[#71717A] hover:text-[#090A0F]'
+                  }`}
+                  aria-label={liked ? 'Unlike title' : 'Like title'}
                 >
                   <i
                     className={`${
-                      star <= rating
-                        ? 'ri-star-fill text-yellow-400'
-                        : 'ri-star-line text-[#A1A1AA]'
-                    } text-xl`}
+                      liked ? 'ri-heart-fill' : 'ri-heart-line'
+                    } text-sm`}
                   ></i>
+                  <span>Like</span>
                 </button>
-              ))}
+              )}
             </div>
           </div>
         </div>
 
-        {/* Review text */}
         <div className="mt-5 w-full">
           <textarea
             rows="5"
@@ -184,10 +203,10 @@ function ReviewModal({
           />
         </div>
 
-        {/* Error */}
-        {errorMessage && <p className="mt-3 text-xs text-red-500">{errorMessage}</p>}
+        {errorMessage && (
+          <p className="mt-3 text-xs text-red-500">{errorMessage}</p>
+        )}
 
-        {/* Footer */}
         <div className="mt-4 flex items-center justify-between border-t border-[#E4E4E7] pt-4">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-[#71717A] transition-colors hover:text-[#090A0F]">
             <input
@@ -199,6 +218,7 @@ function ReviewModal({
             />
             <span>Contains spoilers</span>
           </label>
+
           <button
             type="button"
             onClick={handlePublish}

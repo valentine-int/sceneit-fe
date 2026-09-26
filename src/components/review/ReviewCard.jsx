@@ -14,6 +14,7 @@ function ReviewCard({
   onLike,
   showPoster = true,
   hideLike = false,
+  onReport,
 }) {
   return (
     <article className="flex gap-4 rounded-xl border border-[#27272A] bg-[#12141C] p-4 sm:gap-5 sm:p-5">
@@ -94,25 +95,41 @@ function ReviewCard({
 
         {/* Review text */}
 
-        <p className="mt-4 text-sm leading-relaxed text-[#D4D4D8]">
+        <p className="mt-3 text-sm leading-relaxed text-[#D4D4D8]">
           "{review}"
         </p>
 
         {/* Like */}
+        <div className="mt-5 flex items-center gap-4">
         {!hideLike && (
           <button
             type="button"
             onClick={onLike}
             disabled={isProcessing}
-            className={`mt-5 flex items-center gap-1.5 text-xs transition-colors ${
+            className={`flex items-center gap-1.5 text-xs transition-colors ${
               isLiked ? 'text-red-400' : 'text-[#93939A] hover:text-[#F4F4F5]'
             } ${isProcessing ? 'cursor-not-allowed opacity-60' : ''}`}
             aria-label={isLiked ? 'Unlike review' : 'Like review'}
           >
-            <i className={`${isLiked ? 'ri-heart-fill' : 'ri-heart-line'} text-base`}></i>
+            <i
+              className={`${isLiked ? 'ri-heart-fill' : 'ri-heart-line'} text-base`}
+            ></i>
             <span>{likes}</span>
           </button>
         )}
+
+        {onReport && (
+          <button
+            type="button"
+            onClick={onReport}
+            className="flex items-center gap-1.5 text-xs text-[#93939A] transition-colors hover:text-red-400"
+            aria-label="Report review"
+          >
+            <i className="ri-flag-line text-base"></i>
+            <span>Report</span>
+          </button>
+        )}
+      </div>
 
       </div>
 

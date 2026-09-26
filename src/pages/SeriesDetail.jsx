@@ -9,6 +9,7 @@ import Button from '../components/common/Button';
 import SimilarSeries from '../components/movie/SimilarSeries';
 import ReviewCard from '../components/review/ReviewCard';
 import ReviewModal from '../components/review/ReviewModal';
+import ReportReviewModal from '../components/review/ReportReviewModal';
 import TmdbReviews from '../components/review/TmdbReviews';
 
 import {
@@ -16,6 +17,7 @@ import {
   createMovieReview,
   likeReview,
   unlikeReview,
+  reportReview,
 } from '../services/reviewService';
 
 import {
@@ -56,6 +58,7 @@ function SeriesDetail() {
   const [reviewsError, setReviewsError] = useState('');
   const [likedReviews, setLikedReviews] = useState([]);
   const [processingLikes, setProcessingLikes] = useState([]);
+  const [reportingReviewId, setReportingReviewId] = useState(null);
 
   // Load reviews for this series
   useEffect(() => {
@@ -87,6 +90,7 @@ function SeriesDetail() {
     loadReviews();
   }, [data]);
 
+  // Sync favorite status once series id is known
   useEffect(() => {
     async function syncFavoriteStatus() {
       if (!data?.id) {
@@ -112,6 +116,7 @@ function SeriesDetail() {
     syncFavoriteStatus();
   }, [data]);
 
+  // Sync watchlist and watched status
   useEffect(() => {
     async function syncWatchStatus() {
       if (!data?.id) {
@@ -126,11 +131,15 @@ function SeriesDetail() {
           getWatched(),
         ]);
 
-        const inWatchlist = (watchlistResult.watchlist || []).some(
+        const inWatchlist = (
+          watchlistResult.watchlist || []
+        ).some(
           (item) => Number(item.movieId) === Number(data.id)
         );
 
-        const inWatched = (watchedResult.watched || []).some(
+        const inWatched = (
+          watchedResult.watched || []
+        ).some(
           (item) => Number(item.movieId) === Number(data.id)
         );
 
@@ -144,6 +153,7 @@ function SeriesDetail() {
     syncWatchStatus();
   }, [data]);
 
+  // Format backend createdAt for display
   const formatReviewDate = (date) => {
     if (!date) {
       return 'N/A';
@@ -162,6 +172,7 @@ function SeriesDetail() {
     });
   };
 
+  // Add or remove series from watchlist
   const handleWatchlist = async () => {
     if (!data?.id) {
       return;
@@ -180,6 +191,7 @@ function SeriesDetail() {
     }
   };
 
+  // Add or remove series from watched
   const handleWatched = async () => {
     if (!data?.id) {
       return;
@@ -199,6 +211,7 @@ function SeriesDetail() {
     }
   };
 
+  // Add or remove series from favorites
   const handleFavorite = async () => {
     if (!data?.id) {
       return;
@@ -217,6 +230,7 @@ function SeriesDetail() {
     }
   };
 
+  // Like or unlike a review
   const handleReviewLike = async (reviewId) => {
     if (processingLikes.includes(reviewId)) {
       return;
@@ -281,6 +295,14 @@ function SeriesDetail() {
     }
   };
 
+  // Report a review
+  const handleSubmitReport = async (reason) => {
+    await reportReview(reportingReviewId, reason);
+    setReportingReviewId(null);
+    showToast('Report submitted. Thank you!', 'success');
+  };
+
+  // Create review and optionally like the new review
   const handleReviewPublished = async (newReview) => {
     if (!data?.id) {
       throw new Error('Series data is not available.');
@@ -294,6 +316,7 @@ function SeriesDetail() {
 
     const createdReview = result.review;
 
+    // Like the newly created review if requested
     if (newReview.liked) {
       try {
         await likeReview(createdReview.id);
@@ -307,6 +330,7 @@ function SeriesDetail() {
       }
     }
 
+    // Reload reviews so the new review appears immediately
     const updatedResult = await getMovieReviews(data.id);
 
     setReviews(updatedResult.reviews || []);
@@ -321,17 +345,13 @@ function SeriesDetail() {
     return (
       <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
         <section className="container mx-auto px-6 pb-20 pt-32">
-
           <div className="py-20 text-center">
-
             <i className="ri-loader-4-line animate-spin text-3xl text-[#93939A]"></i>
 
             <p className="mt-4 text-sm text-[#93939A]">
               Loading series details...
             </p>
-
           </div>
-
         </section>
       </main>
     );
@@ -341,9 +361,7 @@ function SeriesDetail() {
     return (
       <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
         <section className="container mx-auto px-6 pb-20 pt-32">
-
           <div className="py-20 text-center">
-
             <i className="ri-error-warning-line text-3xl text-[#52525B]"></i>
 
             <h1 className="mt-4 text-xl font-semibold">
@@ -351,11 +369,10 @@ function SeriesDetail() {
             </h1>
 
             <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#93939A]">
-              {error?.message || 'Series data is not available.'}
+              {error?.message ||
+                'Series data is not available.'}
             </p>
-
           </div>
-
         </section>
       </main>
     );
@@ -657,6 +674,9 @@ function SeriesDetail() {
                     onLike={() =>
                       handleReviewLike(review.id)
                     }
+                    onReport={() =>
+                      setReportingReviewId(review.id)
+                    }
                     showPoster={false}
                   />
 
@@ -675,14 +695,20 @@ function SeriesDetail() {
 
       </section>
 
+      {/* TMDB reviews */}
+
       <TmdbReviews
         tmdbId={data.tmdbId}
         type="series"
       />
 
+      {/* Similar series */}
+
       <SimilarSeries
-        seriesId={data.tmdb}
+        seriesId={data.tmdbId}
       />
+
+      {/* Review modal */}
 
       <ReviewModal
         isOpen={isReviewOpen}
@@ -694,6 +720,14 @@ function SeriesDetail() {
           genre: series.genre,
           poster: series.poster,
         }}
+      />
+
+      {/* Report review modal */}
+
+      <ReportReviewModal
+        isOpen={reportingReviewId !== null}
+        onClose={() => setReportingReviewId(null)}
+        onSubmit={handleSubmitReport}
       />
 
     </main>

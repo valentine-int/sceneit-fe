@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
-import { getFavorites } from '../services/favoriteService';
 
 import { useToast } from '../context/ToastContext';
 
@@ -10,6 +9,7 @@ import Button from '../components/common/Button';
 import SimilarMovies from '../components/movie/SimilarMovies';
 import ReviewCard from '../components/review/ReviewCard';
 import ReviewModal from '../components/review/ReviewModal';
+import ReportReviewModal from '../components/review/ReportReviewModal';
 import TmdbReviews from '../components/review/TmdbReviews';
 
 import {
@@ -17,9 +17,11 @@ import {
   createMovieReview,
   likeReview,
   unlikeReview,
+  reportReview,
 } from '../services/reviewService';
 
 import {
+  getFavorites,
   addToFavorites,
   removeFromFavorites,
 } from '../services/favoriteService';
@@ -62,6 +64,7 @@ function MovieDetail() {
   const [reviewsError, setReviewsError] = useState('');
   const [likedReviews, setLikedReviews] = useState([]);
   const [processingLikes, setProcessingLikes] = useState([]);
+  const [reportingReviewId, setReportingReviewId] = useState(null);
 
   // Load reviews for this movie
   useEffect(() => {
@@ -119,6 +122,7 @@ function MovieDetail() {
     syncFavoriteStatus();
   }, [data]);
 
+  // Sync watchlist and watched status
   useEffect(() => {
     async function syncWatchStatus() {
       if (!data?.id) {
@@ -133,18 +137,25 @@ function MovieDetail() {
           getWatched(),
         ]);
 
-        const inWatchlist = (watchlistResult.watchlist || []).some(
+        const inWatchlist = (
+          watchlistResult.watchlist || []
+        ).some(
           (item) => Number(item.movieId) === Number(data.id)
         );
 
-        const inWatched = (watchedResult.watched || []).some(
+        const inWatched = (
+          watchedResult.watched || []
+        ).some(
           (item) => Number(item.movieId) === Number(data.id)
         );
 
         setIsWatchlisted(inWatchlist);
         setIsWatched(inWatched);
       } catch (error) {
-        console.error('MOVIE WATCH STATUS SYNC ERROR:', error);
+        console.error(
+          'MOVIE WATCH STATUS SYNC ERROR:',
+          error
+        );
       }
     }
 
@@ -277,6 +288,13 @@ function MovieDetail() {
     }
   };
 
+  // Report a review
+  const handleSubmitReport = async (reason) => {
+    await reportReview(reportingReviewId, reason);
+    setReportingReviewId(null);
+    showToast('Report submitted. Thank you!', 'success');
+  };
+
   // Create review and optionally like the new review
   const handleReviewPublished = async (newReview) => {
     if (!data?.id) {
@@ -343,17 +361,13 @@ function MovieDetail() {
     return (
       <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
         <section className="container mx-auto px-6 pb-20 pt-32">
-
           <div className="py-20 text-center">
-
             <i className="ri-loader-4-line animate-spin text-3xl text-[#93939A]"></i>
 
             <p className="mt-4 text-sm text-[#93939A]">
               Loading movie details...
             </p>
-
           </div>
-
         </section>
       </main>
     );
@@ -363,9 +377,7 @@ function MovieDetail() {
     return (
       <main className="min-h-screen bg-[#090A0F] text-[#F4F4F5]">
         <section className="container mx-auto px-6 pb-20 pt-32">
-
           <div className="py-20 text-center">
-
             <i className="ri-error-warning-line text-3xl text-[#52525B]"></i>
 
             <h1 className="mt-4 text-xl font-semibold">
@@ -376,9 +388,7 @@ function MovieDetail() {
               {error?.message ||
                 'Movie data is not available.'}
             </p>
-
           </div>
-
         </section>
       </main>
     );
@@ -709,6 +719,9 @@ function MovieDetail() {
                     onLike={() =>
                       handleReviewLike(review.id)
                     }
+                    onReport={() =>
+                      setReportingReviewId(review.id)
+                    }
                     showPoster={false}
                   />
 
@@ -729,11 +742,16 @@ function MovieDetail() {
 
       {/* TMDB reviews */}
 
-      <TmdbReviews tmdbId={data.tmdbId} type="movie" />
+      <TmdbReviews
+        tmdbId={data.tmdbId}
+        type="movie"
+      />
 
       {/* Similar movies */}
 
-      <SimilarMovies movieId={data.tmdbId} />
+      <SimilarMovies
+        movieId={data.tmdbId}
+      />
 
       {/* Review modal */}
 
@@ -747,6 +765,12 @@ function MovieDetail() {
           genre: movie.genre,
           poster: movie.poster,
         }}
+      />
+
+      <ReportReviewModal
+        isOpen={reportingReviewId !== null}
+        onClose={() => setReportingReviewId(null)}
+        onSubmit={handleSubmitReport}
       />
 
     </main>

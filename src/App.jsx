@@ -19,6 +19,10 @@ import MyWatchlist from './pages/profile/MyWatchlist';
 import MyWatched from './pages/profile/MyWatched';
 import MyFavorite from './pages/profile/MyFavorite';
 import UserSearch from './pages/UserSearch';
+import AdminRoute from './components/common/AdminRoute';
+import AdminReports from './pages/admin/AdminReports';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminFeatured from './pages/admin/AdminFeatured';
 
 function App() {
   return (
@@ -28,23 +32,28 @@ function App() {
         <Navbar />
 
         <Routes>
+
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/people" element={<UserSearch />} />
+          
           <Route path="/movie/:id" element={<MovieDetail />} />
           <Route path="/movies" element={<Movies />} />
           <Route path="/series" element={<Series />} />
           <Route path="/series/:id" element={<SeriesDetail />} />
           <Route path="/profile" element={<PublicProfile />} />
+
           <Route path="/me/reviews" element={<MyReviews />} />
           <Route path="/me/watchlist" element={<MyWatchlist />} />
           <Route path="/me/watched" element={<MyWatched />} />
           <Route path="/me/favorite" element={<MyFavorite />} />
-          <Route path="/profile" element={<PublicProfile />} />
+
           <Route path="/profile/:userId" element={<PublicProfile />} />
-          
+          <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
+          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+          <Route path="/admin/featured" element={<AdminRoute><AdminFeatured /></AdminRoute>} />
         </Routes>
 
         <Footer />
