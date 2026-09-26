@@ -40,10 +40,6 @@ export function unlikeReview(reviewId) {
   });
 }
 
-export function getPopularReviews(limit = 10) {
-  return apiRequest(`/api/reviews/popular?limit=${limit}`);
-}
-
 export function reportReview(reviewId, reason) {
   return apiRequest(`/api/reviews/${reviewId}/report`, {
     method: 'POST',
