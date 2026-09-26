@@ -3,7 +3,7 @@ import React from 'react';
 import Hero from '../components/layout/Hero';
 import MovieGrid from '../components/movie/MovieGrid';
 import TopRated from '../components/movie/TopRated';
-import PopularReviews from '../components/review/PopularReviews';
+import PopularWithFriends from '../components/home/PopularWithFriends';
 
 import useHome from '../hooks/useHome';
 
@@ -112,8 +112,8 @@ function Home() {
         />
       )}
 
-      {/* POPULAR REVIEWS */}
-      <PopularReviews />
+      {/* POPULAR WITH FRIENDS */}
+      <PopularWithFriends />
 
     </main>
   );

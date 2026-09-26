@@ -133,10 +133,19 @@ function Feed() {
           <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#93939A]">
             Your network
           </p>
+
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Feed</h1>
           <p className="mt-3 text-sm leading-relaxed text-[#93939A]">
             Recent activity from people you follow.
           </p>
+
+            <Link
+            to="/users"
+            className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#27272A] px-4 py-2 text-sm text-[#F4F4F5] transition hover:bg-[#12141C]"
+            >
+              <i className="ri-user-search-line"></i>
+              Find People
+              </Link>
         </div>
 
         {/* LOADING */}

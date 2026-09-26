@@ -109,7 +109,7 @@ function MyReviews() {
 
         {/* LIST */}
         {!loading && !error && reviews.length > 0 && (
-          <div className="max-w-3xl space-y-4">
+          <div className="w-full space-y-4">
             {reviews.map((review) => (
               <div key={review.id} className="relative">
                 <ReviewCard

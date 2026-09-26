@@ -140,7 +140,6 @@ const renderSeriesCard = (series) => (
             className="text-2xl text-[#93939A] transition-colors hover:text-[#F4F4F5]"
             aria-label={`View all ${title}`}
           >
-            <i className="ri-arrow-right-s-line"></i>
           </button>
 
         </div>

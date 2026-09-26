@@ -4,9 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 import { loginUser } from '../../services/authService';
+import PasswordInput from '../../components/common/PasswordInput';
+import { useToast } from '../../context/ToastContext';
 
 function Login() {
   const { setUser } = useAuth();
+  const { showToast } = useToast();
 
   // Form state
   const [email, setEmail] = useState('');
@@ -46,6 +49,7 @@ function Login() {
       setUser(result.user);
 
       // Login berhasil
+      showToast(`Welcome back, ${result.user.name}!`, 'success');
       navigate('/');
     } catch (error) {
       console.error('LOGIN ERROR:', error);
@@ -60,13 +64,10 @@ function Login() {
 
   return (
     <main className="min-h-screen bg-[#090A0F] px-6 py-32 text-[#F4F4F5]">
-
       <div className="mx-auto w-full max-w-md">
 
         {/* Header */}
-
         <div className="mb-8">
-
           <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
             Welcome back
           </p>
@@ -74,20 +75,16 @@ function Login() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight">
             Log in to SceneIt
           </h1>
-
         </div>
 
         {/* Login form */}
-
         <form
           onSubmit={handleSubmit}
           className="space-y-5"
         >
 
           {/* Email */}
-
           <div>
-
             <label
               htmlFor="email"
               className="mb-2 block text-sm font-medium text-[#D4D4D8]"
@@ -107,13 +104,10 @@ function Login() {
               autoComplete="email"
               className="w-full rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
             />
-
           </div>
 
           {/* Password */}
-
           <div>
-
             <label
               htmlFor="password"
               className="mb-2 block text-sm font-medium text-[#D4D4D8]"
@@ -121,9 +115,8 @@ function Login() {
               Password
             </label>
 
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
@@ -131,27 +124,22 @@ function Login() {
               }}
               placeholder="Enter your password"
               autoComplete="current-password"
-              className="w-full rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
+              className="rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
             />
-
           </div>
 
           {/* Error */}
-
           {errorMessage && (
             <div className="flex items-start gap-2 text-sm text-red-400">
-
               <i className="ri-error-warning-line mt-0.5 text-base"></i>
 
               <p>
                 {errorMessage}
               </p>
-
             </div>
           )}
 
           {/* Submit */}
-
           <button
             type="submit"
             disabled={isLoading}
@@ -159,13 +147,10 @@ function Login() {
           >
             {isLoading ? 'Logging in...' : 'Log in'}
           </button>
-
         </form>
 
         {/* Register */}
-
         <p className="mt-8 text-center text-sm text-[#93939A]">
-
           Don't have an account?{' '}
 
           <Link
@@ -174,11 +159,9 @@ function Login() {
           >
             Create an account
           </Link>
-
         </p>
 
       </div>
-
     </main>
   );
 }

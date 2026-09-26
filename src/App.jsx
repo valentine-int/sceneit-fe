@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-
 import { AuthProvider } from './context/AuthContext';
 
 import Navbar from './components/layout/Navbar';
@@ -19,7 +18,7 @@ import MyReviews from './pages/profile/MyReviews';
 import MyWatchlist from './pages/profile/MyWatchlist';
 import MyWatched from './pages/profile/MyWatched';
 import MyFavorite from './pages/profile/MyFavorite';
-import Feed from './pages/Feed';
+import UserSearch from './pages/UserSearch';
 
 function App() {
   return (
@@ -33,7 +32,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/explore" element={<Explore />} />
-          <Route path="/feed" element={<Feed />} />
+          <Route path="/people" element={<UserSearch />} />
           <Route path="/movie/:id" element={<MovieDetail />} />
           <Route path="/movies" element={<Movies />} />
           <Route path="/series" element={<Series />} />

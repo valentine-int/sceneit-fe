@@ -3,40 +3,28 @@ import 'remixicon/fonts/remixicon.css';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { registerUser } from '../../services/authService';
+import PasswordInput from '../../components/common/PasswordInput';
 
 function Register() {
-
-  // =========================
-  // FORM STATE
-  // =========================
-
+  // Form state
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // =========================
-  // UI STATE
-  // =========================
-
+  // UI state
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
 
-
-  // =========================
-  // HANDLE REGISTER
-  // =========================
-
+  // Handle register
   const handleSubmit = async (event) => {
-
     event.preventDefault();
 
     setErrorMessage('');
 
-    // NAME VALIDATION
-
+    // Name validation
     if (!name.trim()) {
       setErrorMessage('Please enter your name.');
       return;
@@ -47,15 +35,13 @@ function Register() {
       return;
     }
 
-    // EMAIL VALIDATION
-
+    // Email validation
     if (!email.trim()) {
       setErrorMessage('Please enter your email.');
       return;
     }
 
-    // PASSWORD VALIDATION
-
+    // Password validation
     if (!password) {
       setErrorMessage('Please enter your password.');
       return;
@@ -66,8 +52,7 @@ function Register() {
       return;
     }
 
-    // CONFIRM PASSWORD
-
+    // Confirm password
     if (!confirmPassword) {
       setErrorMessage('Please confirm your password.');
       return;
@@ -79,7 +64,6 @@ function Register() {
     }
 
     try {
-
       setIsLoading(true);
 
       await registerUser({
@@ -90,35 +74,23 @@ function Register() {
 
       // Register berhasil
       navigate('/');
-
     } catch (error) {
-
       console.error('REGISTER ERROR:', error);
 
       setErrorMessage(
         error.message || 'Registration failed. Please try again.'
       );
-
     } finally {
-
       setIsLoading(false);
-
     }
   };
 
-
   return (
-
     <main className="min-h-screen bg-[#090A0F] px-6 py-32 text-[#F4F4F5]">
-
       <div className="mx-auto w-full max-w-md">
 
-        {/* =========================
-            HEADER
-        ========================= */}
-
+        {/* Header */}
         <div className="mb-8">
-
           <p className="text-xs font-medium uppercase tracking-widest text-[#93939A]">
             Join SceneIt
           </p>
@@ -130,23 +102,16 @@ function Register() {
           <p className="mt-3 text-sm leading-6 text-[#93939A]">
             Create an account to keep track of what you watch.
           </p>
-
         </div>
 
-
-        {/* =========================
-            REGISTER FORM
-        ========================= */}
-
+        {/* Register form */}
         <form
           onSubmit={handleSubmit}
           className="space-y-5"
         >
 
-          {/* NAME */}
-
+          {/* Name */}
           <div>
-
             <label
               htmlFor="name"
               className="mb-2 block text-sm font-medium text-[#D4D4D8]"
@@ -166,14 +131,10 @@ function Register() {
               autoComplete="name"
               className="w-full rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
             />
-
           </div>
 
-
-          {/* EMAIL */}
-
+          {/* Email */}
           <div>
-
             <label
               htmlFor="email"
               className="mb-2 block text-sm font-medium text-[#D4D4D8]"
@@ -193,14 +154,10 @@ function Register() {
               autoComplete="email"
               className="w-full rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
             />
-
           </div>
 
-
-          {/* PASSWORD */}
-
+          {/* Password */}
           <div>
-
             <label
               htmlFor="password"
               className="mb-2 block text-sm font-medium text-[#D4D4D8]"
@@ -208,9 +165,8 @@ function Register() {
               Password
             </label>
 
-            <input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
@@ -218,16 +174,12 @@ function Register() {
               }}
               placeholder="At least 8 characters"
               autoComplete="new-password"
-              className="w-full rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
+              className="rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
             />
-
           </div>
 
-
-          {/* CONFIRM PASSWORD */}
-
+          {/* Confirm password */}
           <div>
-
             <label
               htmlFor="confirmPassword"
               className="mb-2 block text-sm font-medium text-[#D4D4D8]"
@@ -235,9 +187,8 @@ function Register() {
               Confirm Password
             </label>
 
-            <input
+            <PasswordInput
               id="confirmPassword"
-              type="password"
               value={confirmPassword}
               onChange={(event) => {
                 setConfirmPassword(event.target.value);
@@ -245,53 +196,33 @@ function Register() {
               }}
               placeholder="Re-enter your password"
               autoComplete="new-password"
-              className="w-full rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
+              className="rounded-lg border border-[#27272A] bg-[#12141C] px-4 py-3 text-sm text-[#F4F4F5] outline-none transition-colors placeholder:text-[#52525B] focus:border-[#F4F4F5]"
             />
-
           </div>
 
-
-          {/* ERROR */}
-
+          {/* Error */}
           {errorMessage && (
-
             <div className="flex items-start gap-2 text-sm text-red-400">
-
               <i className="ri-error-warning-line mt-0.5 text-base"></i>
 
               <p>
                 {errorMessage}
               </p>
-
             </div>
-
           )}
 
-
-          {/* SUBMIT */}
-
+          {/* Submit */}
           <button
             type="submit"
             disabled={isLoading}
             className="w-full rounded-lg bg-[#F4F4F5] px-4 py-3 text-sm font-semibold text-[#090A0F] transition-colors hover:bg-[#E4E4E7] disabled:cursor-not-allowed disabled:opacity-50"
           >
-
-            {isLoading
-              ? 'Creating account...'
-              : 'Create account'
-            }
-
+            {isLoading ? 'Creating account...' : 'Create account'}
           </button>
-
         </form>
 
-
-        {/* =========================
-            LOGIN LINK
-        ========================= */}
-
+        {/* Login link */}
         <p className="mt-8 text-center text-sm text-[#93939A]">
-
           Already have an account?{' '}
 
           <Link
@@ -300,11 +231,9 @@ function Register() {
           >
             Log in
           </Link>
-
         </p>
 
       </div>
-
     </main>
   );
 }

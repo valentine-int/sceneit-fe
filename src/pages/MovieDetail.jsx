@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 import { getFavorites } from '../services/favoriteService';
 
+import { useToast } from '../context/ToastContext';
+
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import SimilarMovies from '../components/movie/SimilarMovies';
@@ -45,6 +47,8 @@ function MovieDetail() {
     isLoading,
     error,
   } = useMovieDetail(id, 'movie');
+
+  const { showToast } = useToast();
 
   // Movie action state
   const [isWatchlisted, setIsWatchlisted] = useState(false);
@@ -90,26 +94,30 @@ function MovieDetail() {
   }, [data]);
 
   // Sync favorite status once movie id is known
-useEffect(() => {
-  async function syncFavoriteStatus() {
-    if (!data?.id) {
-      setIsLiked(false);
-      return;
+  useEffect(() => {
+    async function syncFavoriteStatus() {
+      if (!data?.id) {
+        setIsLiked(false);
+        return;
+      }
+
+      try {
+        const result = await getFavorites();
+        const favorites = result.favorites || [];
+
+        const exists = favorites.some(
+          (item) => Number(item.movieId) === Number(data.id)
+        );
+
+        setIsLiked(exists);
+      } catch (error) {
+        console.error('FAVORITE SYNC ERROR:', error);
+        setIsLiked(false);
+      }
     }
-    try {
-      const result = await getFavorites();
-      const favorites = result.favorites || [];
-      const exists = favorites.some(
-        (item) => Number(item.movieId) === Number(data.id)
-      );
-      setIsLiked(exists);
-    } catch (error) {
-      console.error('FAVORITE SYNC ERROR:', error);
-      setIsLiked(false);
-    }
-  }
-  syncFavoriteStatus();
-}, [data]);
+
+    syncFavoriteStatus();
+  }, [data]);
 
   useEffect(() => {
     async function syncWatchStatus() {
@@ -118,23 +126,28 @@ useEffect(() => {
         setIsWatched(false);
         return;
       }
+
       try {
         const [watchlistResult, watchedResult] = await Promise.all([
           getWatchlist(),
           getWatched(),
         ]);
+
         const inWatchlist = (watchlistResult.watchlist || []).some(
           (item) => Number(item.movieId) === Number(data.id)
         );
+
         const inWatched = (watchedResult.watched || []).some(
           (item) => Number(item.movieId) === Number(data.id)
         );
+
         setIsWatchlisted(inWatchlist);
         setIsWatched(inWatched);
       } catch (error) {
         console.error('MOVIE WATCH STATUS SYNC ERROR:', error);
       }
     }
+
     syncWatchStatus();
   }, [data]);
 
@@ -302,25 +315,29 @@ useEffect(() => {
 
     // A watched title is removed from the watchlist by backend
     setIsWatchlisted(false);
+
+    showToast('Your review was published!', 'success');
+    setIsReviewOpen(false);
   };
 
-      // Add or remove movie from favorites
-    const handleFavorite = async () => {
-      if (!data?.id) {
-        return;
+  // Add or remove movie from favorites
+  const handleFavorite = async () => {
+    if (!data?.id) {
+      return;
+    }
+
+    try {
+      if (isLiked) {
+        await removeFromFavorites(data.id);
+        setIsLiked(false);
+      } else {
+        await addToFavorites(data.id);
+        setIsLiked(true);
       }
-      try {
-        if (isLiked) {
-          await removeFromFavorites(data.id);
-          setIsLiked(false);
-        } else {
-          await addToFavorites(data.id);
-          setIsLiked(true);
-        }
-      } catch (error) {
-        console.error('FAVORITE ERROR:', error);
-      }
-    };
+    } catch (error) {
+      console.error('FAVORITE ERROR:', error);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -433,7 +450,7 @@ useEffect(() => {
               {movie.title}
             </h1>
 
-            <p className="mt-1 text-sm text-[#93939A]">
+            <p className="mt-4 text-sm text-[#93939A]">
               {movie.genre || 'Unknown genre'}
             </p>
 
@@ -496,6 +513,7 @@ useEffect(() => {
             </button>
 
             {/* Movie like */}
+
             <button
               type="button"
               onClick={handleFavorite}
@@ -504,11 +522,17 @@ useEffect(() => {
                   ? 'text-red-400'
                   : 'text-[#93939A] hover:text-[#F4F4F5]'
               }`}
-              aria-label={isLiked ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={
+                isLiked
+                  ? 'Remove from favorites'
+                  : 'Add to favorites'
+              }
             >
               <i
                 className={`${
-                  isLiked ? 'ri-heart-fill' : 'ri-heart-line'
+                  isLiked
+                    ? 'ri-heart-fill'
+                    : 'ri-heart-line'
                 } text-xl`}
               ></i>
             </button>
@@ -654,7 +678,7 @@ useEffect(() => {
         {!reviewsLoading &&
           !reviewsError &&
           reviews.length > 0 && (
-            <div className="max-w-3xl">
+            <div className="w-full">
 
               {reviews.map((review) => (
                 <div
@@ -702,8 +726,9 @@ useEffect(() => {
           )}
 
       </section>
-      
+
       {/* TMDB reviews */}
+
       <TmdbReviews tmdbId={data.tmdbId} type="movie" />
 
       {/* Similar movies */}

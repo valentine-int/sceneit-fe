@@ -23,3 +23,8 @@ export function getFollowers(userId) {
 export function getFollowing(userId) {
   return apiRequest(`/api/users/${userId}/following`);
 }
+
+export function searchUsers(query) {
+  const params = new URLSearchParams({ query });
+  return apiRequest(`/api/users/search?${params.toString()}`);
+}

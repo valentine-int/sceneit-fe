@@ -64,7 +64,7 @@ function TmdbReviews({ tmdbId, type = 'movie' }) {
         </p>
         <h2 className="mt-2 text-2xl font-bold sm:text-3xl">Reviews from TMDB</h2>
       </div>
-      <div className="max-w-3xl space-y-4">
+      <div className="w-full space-y-4">
         {reviews.slice(0, 5).map((review) => (
           <ReviewCard
             key={review.id}

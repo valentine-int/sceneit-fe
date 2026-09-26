@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import 'remixicon/fonts/remixicon.css';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
 import Button from '../common/Button';
 import Badge from '../common/Badge';
 import ReviewModal from '../review/ReviewModal';
@@ -18,6 +19,8 @@ import dummyPoster from '../../assets/Poster1.jpg';
 
 function Hero({ movies = [] }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
+
   const [activeIndex, setActiveIndex] = useState(0);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
@@ -35,19 +38,24 @@ function Hero({ movies = [] }) {
         setIsWatchlisted(false);
         return;
       }
+
       try {
         setWatchlistError('');
+
         const result = await getWatchlist();
         const watchlist = result.watchlist || [];
+
         const exists = watchlist.some(
           (item) => Number(item.movieId) === Number(featuredItem.id)
         );
+
         setIsWatchlisted(exists);
       } catch (error) {
         console.error('HERO WATCHLIST SYNC ERROR:', error);
         setIsWatchlisted(false);
       }
     }
+
     syncWatchlistStatus();
   }, [featuredItem, user]);
 
@@ -57,6 +65,7 @@ function Hero({ movies = [] }) {
       setActiveIndex(0);
       return;
     }
+
     if (activeIndex >= movies.length) {
       setActiveIndex(0);
     }
@@ -68,26 +77,35 @@ function Hero({ movies = [] }) {
 
   const isSeries = featuredItem.type === 'Series';
   const releaseYear = featuredItem.releaseYear || 'N/A';
+
   const rating =
     featuredItem.rating !== null && featuredItem.rating !== undefined
       ? Number(featuredItem.rating).toFixed(1)
       : 'N/A';
-  const genre = featuredItem.genres ? featuredItem.genres.split(',')[0].trim() : 'N/A';
+
+  const genre = featuredItem.genres
+    ? featuredItem.genres.split(',')[0].trim()
+    : 'N/A';
 
   let duration = 'N/A';
+
   if (!isSeries && featuredItem.duration) {
-    duration = `${Math.floor(featuredItem.duration / 60)}h ${featuredItem.duration % 60}m`;
+    duration = `${Math.floor(featuredItem.duration / 60)}h ${
+      featuredItem.duration % 60
+    }m`;
   } else if (isSeries && featuredItem.seasons?.length) {
     const totalEpisodes = featuredItem.seasons.reduce(
       (total, season) => total + (season.episodeCount || 0),
       0
     );
+
     duration = `${totalEpisodes} episodes`;
   }
 
   const background = featuredItem.backdropPath
     ? getTmdbImage(featuredItem.backdropPath, 'original')
     : dummyPoster;
+
   const poster = featuredItem.posterPath
     ? getTmdbImage(featuredItem.posterPath, 'w500')
     : dummyPoster;
@@ -109,12 +127,15 @@ function Hero({ movies = [] }) {
       setWatchlistError('Please log in to use your watchlist.');
       return;
     }
+
     if (!featuredItem?.id || watchlistLoading) {
       return;
     }
+
     try {
       setWatchlistLoading(true);
       setWatchlistError('');
+
       if (isWatchlisted) {
         await removeFromWatchlist(featuredItem.id);
         setIsWatchlisted(false);
@@ -124,7 +145,9 @@ function Hero({ movies = [] }) {
       }
     } catch (error) {
       console.error('HERO WATCHLIST ERROR:', error);
-      setWatchlistError(error.message || 'Failed to update your watchlist.');
+      setWatchlistError(
+        error.message || 'Failed to update your watchlist.'
+      );
     } finally {
       setWatchlistLoading(false);
     }
@@ -134,25 +157,36 @@ function Hero({ movies = [] }) {
     if (!user) {
       throw new Error('Please log in to write a review.');
     }
+
     if (!featuredItem?.id || reviewLoading) {
       throw new Error('Movie information is not ready yet.');
     }
+
     try {
       setReviewLoading(true);
       setReviewError('');
+
       const result = await createMovieReview(featuredItem.id, {
         rating: reviewData.rating,
         content: reviewData.reviewText,
         containsSpoiler: reviewData.containsSpoiler,
       });
+
       const createdReview = result.review;
+
       if (reviewData.liked && createdReview?.id) {
         await likeReview(createdReview.id);
       }
+
+      showToast('Your review was published!', 'success');
       setIsReviewOpen(false);
     } catch (error) {
       console.error('HERO REVIEW ERROR:', error);
-      setReviewError(error.message || 'Failed to publish your review.');
+
+      setReviewError(
+        error.message || 'Failed to publish your review.'
+      );
+
       throw error;
     } finally {
       setReviewLoading(false);
@@ -176,7 +210,9 @@ function Hero({ movies = [] }) {
         alt={featuredItem.title}
         className="absolute inset-0 h-full w-full object-cover"
       />
+
       <div className="absolute inset-0 bg-gradient-to-r from-[#090A0F] via-[#090A0F]/80 to-[#090A0F]/20" />
+
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#090A0F] to-transparent" />
 
       <div className="relative container mx-auto px-6 pb-24 pt-36 sm:pb-28 sm:pt-40">
@@ -184,23 +220,30 @@ function Hero({ movies = [] }) {
           <div className="mb-2">
             <Badge>{featuredItem.type}</Badge>
           </div>
+
           <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
             {featuredItem.title}
           </h1>
+
           <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm">
             <div className="flex items-center gap-1.5">
               <i className="ri-star-fill text-yellow-400"></i>
-              <span className="font-semibold text-[#F4F4F5]">{rating}</span>
+              <span className="font-semibold text-[#F4F4F5]">
+                {rating}
+              </span>
             </div>
+
             <span className="text-[#93939A]">{releaseYear}</span>
             <span className="text-[#52525B]">•</span>
             <span className="text-[#93939A]">{genre}</span>
             <span className="text-[#52525B]">•</span>
             <span className="text-[#93939A]">{duration}</span>
           </div>
+
           <p className="mt-5 max-w-xl text-sm leading-relaxed text-[#D4D4D8] sm:text-base">
             {featuredItem.overview || 'No description available.'}
           </p>
+
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <Button
               onClick={() => {
@@ -208,6 +251,7 @@ function Hero({ movies = [] }) {
                   setReviewError('Please log in to write a review.');
                   return;
                 }
+
                 setReviewError('');
                 setIsReviewOpen(true);
               }}
@@ -215,6 +259,7 @@ function Hero({ movies = [] }) {
               <i className="ri-add-line text-base"></i>
               Review
             </Button>
+
             <Button
               variant="ghost"
               onClick={handleWatchlist}
@@ -222,9 +267,12 @@ function Hero({ movies = [] }) {
             >
               <i
                 className={`${
-                  isWatchlisted ? 'ri-bookmark-fill' : 'ri-bookmark-line'
+                  isWatchlisted
+                    ? 'ri-bookmark-fill'
+                    : 'ri-bookmark-line'
                 } text-base`}
               ></i>
+
               {watchlistLoading
                 ? 'Updating...'
                 : isWatchlisted
@@ -232,12 +280,19 @@ function Hero({ movies = [] }) {
                   : 'Watchlist'}
             </Button>
           </div>
+
           {watchlistError && (
-            <p className="mt-3 text-xs text-red-400">{watchlistError}</p>
+            <p className="mt-3 text-xs text-red-400">
+              {watchlistError}
+            </p>
           )}
+
           {reviewError && !isReviewOpen && (
-            <p className="mt-3 text-xs text-red-400">{reviewError}</p>
+            <p className="mt-3 text-xs text-red-400">
+              {reviewError}
+            </p>
           )}
+
           <div className="mt-5 flex items-center gap-2">
             {movies.map((movie, index) => (
               <button
@@ -246,7 +301,9 @@ function Hero({ movies = [] }) {
                 onClick={() => setActiveIndex(index)}
                 aria-label={`Show recommendation ${index + 1}`}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === activeIndex ? 'w-6 bg-[#F4F4F5]' : 'w-1.5 bg-[#93939A]/50'
+                  index === activeIndex
+                    ? 'w-6 bg-[#F4F4F5]'
+                    : 'w-1.5 bg-[#93939A]/50'
                 }`}
               />
             ))}
@@ -264,6 +321,7 @@ function Hero({ movies = [] }) {
           >
             <i className="ri-arrow-left-s-line"></i>
           </button>
+
           <button
             type="button"
             onClick={handleNext}

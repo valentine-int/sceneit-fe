@@ -120,3 +120,7 @@ export function getTmdbReviews(id, type = 'movie', page = 1) {
   const params = new URLSearchParams({ type, page });
   return apiRequest(`/api/movies/${id}/tmdb-reviews?${params.toString()}`);
 }
+
+export function getFeaturedContent() {
+  return apiRequest('/api/featured');
+}
