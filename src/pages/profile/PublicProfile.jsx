@@ -316,7 +316,12 @@ function PublicProfile() {
                     id={item.movie?.tmdbId}
                     title={item.movie?.title}
                     year={item.movie?.releaseYear || 'N/A'}
-                    rating="N/A"
+                    rating={
+                    item.movie?.rating !== null &&
+                    item.movie?.rating !== undefined
+                      ? Number(item.movie.rating).toFixed(1)
+                      : 'N/A'
+                  }
                     type={toCardType(item.movie?.type)}
                     poster={
                       item.movie?.posterPath
@@ -444,7 +449,12 @@ function PublicProfile() {
                     id={item.movie?.tmdbId}
                     title={item.movie?.title}
                     year={item.movie?.releaseYear || 'N/A'}
-                    rating="N/A"
+                    rating={
+                    item.movie?.rating !== null &&
+                    item.movie?.rating !== undefined
+                      ? Number(item.movie.rating).toFixed(1)
+                      : 'N/A'
+                  }
                     type={toCardType(item.movie?.type)}
                     poster={
                       item.movie?.posterPath
@@ -507,7 +517,12 @@ function PublicProfile() {
                     id={item.movie?.tmdbId}
                     title={item.movie?.title}
                     year={item.movie?.releaseYear || 'N/A'}
-                    rating="N/A"
+                    rating={
+                      item.movie?.rating !== null &&
+                      item.movie?.rating !== undefined
+                        ? Number(item.movie.rating).toFixed(1)
+                        : 'N/A'
+                    }
                     type={toCardType(item.movie?.type)}
                     poster={
                       item.movie?.posterPath
