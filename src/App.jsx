@@ -23,6 +23,7 @@ import AdminRoute from './components/common/AdminRoute';
 import AdminReports from './pages/admin/AdminReports';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminFeatured from './pages/admin/AdminFeatured';
+import NotificationsPage from './pages/NotificationsPage';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="/admin/reports" element={<AdminRoute><AdminReports /></AdminRoute>} />
           <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
           <Route path="/admin/featured" element={<AdminRoute><AdminFeatured /></AdminRoute>} />
+          <Route path="/notifications" element={<NotificationsPage />} />
         </Routes>
 
         <Footer />

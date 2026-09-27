@@ -47,7 +47,7 @@ function PopularWithFriends() {
         const result = await getFeed();
         setItems(result.feed || []);
       } catch (err) {
-        console.error('POPULAR WITH FRIENDS LOAD ERROR:', err);
+        console.error('FRIENDS ACTIVITY LOAD ERROR:', err);
         setError(err.message || 'Failed to load activity.');
         setItems([]);
       } finally {
@@ -71,7 +71,7 @@ function PopularWithFriends() {
         </p>
 
         <h2 className="text-2xl font-bold sm:text-3xl">
-          Popular with Friends
+          Friends Actitivty
         </h2>
       </div>
 
@@ -79,8 +79,8 @@ function PopularWithFriends() {
         {items.slice(0, 6).map((item, index) => {
           const detailPath =
             item.movie?.type === 'series'
-              ? `/series/${item.movie.tmdbId ?? item.movie.id}`
-              : `/movie/${item.movie?.tmdbId ?? item.movie?.id}`;
+              ? `/series/${item.movie.tmdbId }`
+              : `/movie/${item.movie?.tmdbId }`;
 
           return (
             <Link

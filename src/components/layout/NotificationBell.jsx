@@ -1,36 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import 'remixicon/fonts/remixicon.css';
 import { useAuth } from '../../context/AuthContext';
-import {
-  getNotifications,
-  markNotificationRead,
-  markAllNotificationsRead,
-} from '../../services/notificationService';
+import { getNotifications, markNotificationRead, markAllNotificationsRead } from '../../services/notificationService';
+import { formatNotificationText, formatTimeAgo } from '../../utils/notificationsFormat';
 import profile from '../../assets/profile.jpg';
-
-function formatNotificationText(notification) {
-  const name = notification.sourceUser?.name || 'Someone';
-  if (notification.type === 'follow') {
-    return `${name} started following you.`;
-  }
-  if (notification.type === 'like') {
-    return `${name} liked your review.`;
-  }
-  return `${name} did something.`;
-}
-
-function formatTimeAgo(date) {
-  if (!date) return '';
-  const diffMs = Date.now() - new Date(date).getTime();
-  const diffMinutes = Math.floor(diffMs / 60000);
-  if (diffMinutes < 1) return 'Just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-}
 
 function NotificationBell() {
   const { user, isLoading } = useAuth();
@@ -144,6 +118,14 @@ function NotificationBell() {
               </button>
             )}
           </div>
+
+          <Link
+          to="/notifications"
+          onClick={() => setIsOpen(false)}
+          className="block border-t border-[#27272A] px-4 py-3 text-center text-sm text-[#93939A] transition-colors hover:bg-[#1A1C24] hover:text-[#F4F4F5]"
+          >
+          See all notifications
+          </Link>
 
           <div className="max-h-96 overflow-y-auto">
             {loading && (

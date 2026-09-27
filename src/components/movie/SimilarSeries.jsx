@@ -7,9 +7,7 @@ function SimilarSeries({ seriesId }) {
   const { data, loading, error } = useSimilarSeries(seriesId);
   const series = data || [];
 
-  // =========================
   // LOADING
-  // =========================
   if (loading) {
     return (
       <section className="container mx-auto px-6 pb-16">
@@ -24,23 +22,17 @@ function SimilarSeries({ seriesId }) {
     );
   }
 
-  // =========================
   // ERROR
-  // =========================
   if (error) {
     return null;
   }
 
-  // =========================
   // EMPTY
-  // =========================
   if (series.length === 0) {
     return null;
   }
 
-  // =========================
   // PAGE
-  // =========================
   return (
     <section className="container mx-auto px-6 pb-16">
       <div className="mb-6">
