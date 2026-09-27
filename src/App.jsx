@@ -28,7 +28,7 @@ import NotificationsPage from './pages/NotificationsPage';
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename="/sceneit-fe">
+      <BrowserRouter>
 
         <Navbar />
 
