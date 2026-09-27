@@ -22,6 +22,7 @@ function Hero({ movies = [] }) {
   const { showToast } = useToast();
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
@@ -204,16 +205,20 @@ function Hero({ movies = [] }) {
   };
 
   return (
-    <section className="relative min-h-[560px] overflow-hidden bg-[#090A0F] text-[#F4F4F5]">
+    <section
+      className="relative min-h-140 overflow-hidden bg-[#090A0F] text-[#F4F4F5]"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <img
         src={background}
         alt={featuredItem.title}
         className="absolute inset-0 h-full w-full object-cover"
       />
 
-      <div className="absolute inset-0 bg-gradient-to-r from-[#090A0F] via-[#090A0F]/80 to-[#090A0F]/20" />
+      <div className="absolute inset-0 bg-linear-to-r from-[#090A0F] via-[#090A0F]/80 to-[#090A0F]/20" />
 
-      <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#090A0F] to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 h-32 bg-linear-to-t from-[#090A0F] to-transparent" />
 
       <div className="relative container mx-auto px-6 pb-24 pt-36 sm:pb-28 sm:pt-40">
         <div className="max-w-2xl">
@@ -317,7 +322,9 @@ function Hero({ movies = [] }) {
             type="button"
             onClick={handlePrevious}
             aria-label="Previous recommendation"
-            className="absolute left-5 top-1/2 -translate-y-1/2 text-3xl text-[#F4F4F5] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] transition-transform hover:scale-125 sm:left-8 sm:text-4xl"
+            className={`absolute left-5 top-1/2 -translate-y-1/2 text-3xl text-[#F4F4F5] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] transition-all duration-300 hover:scale-125 sm:left-8 sm:text-4xl ${
+              isHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
           >
             <i className="ri-arrow-left-s-line"></i>
           </button>
@@ -326,7 +333,9 @@ function Hero({ movies = [] }) {
             type="button"
             onClick={handleNext}
             aria-label="Next recommendation"
-            className="absolute right-5 top-1/2 -translate-y-1/2 text-3xl text-[#F4F4F5] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] transition-transform hover:scale-125 sm:right-8 sm:text-4xl"
+            className={`absolute right-5 top-1/2 -translate-y-1/2 text-3xl text-[#F4F4F5] drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)] transition-all duration-300 hover:scale-125 sm:right-8 sm:text-4xl ${
+              isHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+            }`}
           >
             <i className="ri-arrow-right-s-line"></i>
           </button>
