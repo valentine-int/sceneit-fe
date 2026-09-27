@@ -64,13 +64,16 @@ function AdminFeatured() {
     }
   };
 
-  const handleRemove = async (id) => {
+  // NOTE: id di sini adalah featuredId (ID baris featuredContent),
+  // bukan ID movie lokal. Dipakai khusus untuk operasi CRUD featured
+  // (remove/update), bukan untuk watchlist/favorite/review.
+  const handleRemove = async (featuredId) => {
     if (removingId) return;
     if (!window.confirm('Remove this from Featured Content?')) return;
     try {
-      setRemovingId(id);
-      await removeFeatured(id);
-      setFeatured((current) => current.filter((f) => f.id !== id));
+      setRemovingId(featuredId);
+      await removeFeatured(featuredId);
+      setFeatured((current) => current.filter((f) => f.featuredId !== featuredId));
       showToast('Removed from Featured Content.', 'success');
     } catch (err) {
       console.error('ADMIN REMOVE FEATURED ERROR:', err);
@@ -144,7 +147,7 @@ function AdminFeatured() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
           {featured.map((item) => (
             <div
-              key={item.id}
+              key={item.featuredId}
               className="group relative overflow-hidden rounded-xl border border-[#27272A] bg-[#12141C]"
             >
               <div className="aspect-[2/3] w-full overflow-hidden bg-[#090A0F]">
@@ -160,12 +163,12 @@ function AdminFeatured() {
               </div>
               <button
                 type="button"
-                onClick={() => handleRemove(item.id)}
-                disabled={removingId === item.id}
+                onClick={() => handleRemove(item.featuredId)}
+                disabled={removingId === item.featuredId}
                 className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-red-400 opacity-0 transition-opacity hover:bg-black/90 group-hover:opacity-100 disabled:opacity-100"
                 aria-label="Remove from featured"
               >
-                <i className={removingId === item.id ? 'ri-loader-4-line animate-spin' : 'ri-close-line'}></i>
+                <i className={removingId === item.featuredId ? 'ri-loader-4-line animate-spin' : 'ri-close-line'}></i>
               </button>
             </div>
           ))}

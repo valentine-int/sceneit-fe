@@ -16,9 +16,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // =========================
   // CHECK CURRENT USER
-  // =========================
 
   useEffect(() => {
 

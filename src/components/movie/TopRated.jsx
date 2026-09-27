@@ -4,8 +4,13 @@ import MovieCard from './MovieCard';
 import { getTmdbImage } from '../../utils/tmdbImages';
 import dummyPoster from '../../assets/Poster1.jpg';
 
-function TopRated({ movies = [] }) {
+function TopRated({
+  movies = [],
+  contentType = 'movie',
+}) {
   const movieResults = movies.slice(0, 6);
+
+  const isSeries = contentType === 'series';
 
   if (movieResults.length === 0) {
     return null;
@@ -13,26 +18,26 @@ function TopRated({ movies = [] }) {
 
   return (
     <section className="container mx-auto px-6 py-10">
-      {/* SECTION HEADER */}
       <div className="mb-6 flex items-end justify-between">
         <div>
           <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#93939A]">
             Highly rated
           </p>
+
           <h2 className="text-2xl font-bold text-[#F4F4F5] sm:text-3xl">
-            Top Rated
+            Top Rated {isSeries ? 'Series' : 'Movies'}
           </h2>
         </div>
+
         <Link
-          to="/movies"
+          to={isSeries ? '/series' : '/movies'}
           className="text-2xl text-[#93939A] transition-colors hover:text-[#F4F4F5]"
-          aria-label="View all top rated movies"
+          aria-label={`View all top rated ${isSeries ? 'series' : 'movies'}`}
         >
           <i className="ri-arrow-right-s-line"></i>
         </Link>
       </div>
 
-      {/* MOVIE GRID */}
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
         {movieResults.map((movie) => (
           <MovieCard
@@ -45,9 +50,11 @@ function TopRated({ movies = [] }) {
                 ? Number(movie.rating).toFixed(1)
                 : 'N/A'
             }
-            type="Movie"
+            type={isSeries ? 'Series' : 'Movie'}
             poster={
-              movie.posterPath ? getTmdbImage(movie.posterPath, 'w500') : dummyPoster
+              movie.posterPath
+                ? getTmdbImage(movie.posterPath, 'w500')
+                : dummyPoster
             }
           />
         ))}
