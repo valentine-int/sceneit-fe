@@ -7,7 +7,4 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
   ],
-
-  base: '/sceneit-fe/',
-
 })
