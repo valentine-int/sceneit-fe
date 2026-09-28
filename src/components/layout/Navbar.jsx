@@ -851,6 +851,40 @@ function Navbar() {
                   Explore
                 </NavLink>
 
+                <NavLink
+                to="/people"
+                onClick={() =>
+                  setIsMobileMenuOpen(false)
+                }
+                className={({ isActive }) =>
+                  `border-b border-[#27272A]/50 py-3 text-sm font-medium ${
+                    isActive
+                      ? 'text-[#F4F4F5]'
+                      : 'text-[#93939A]'
+                  }`
+                }
+              >
+                People
+              </NavLink>
+
+              {user?.role === 'admin' && (
+                <NavLink
+                  to="/admin/reports"
+                  onClick={() =>
+                    setIsMobileMenuOpen(false)
+                  }
+                  className={({ isActive }) =>
+                    `border-b border-[#27272A]/50 py-3 text-sm font-medium ${
+                      isActive
+                        ? 'text-[#F4F4F5]'
+                        : 'text-[#93939A]'
+                    }`
+                  }
+                >
+                  Admin Panel
+                </NavLink>
+              )}
+
               </nav>
 
               <div className="mt-5 flex items-center justify-between gap-3">
