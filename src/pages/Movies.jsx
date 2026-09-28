@@ -2,13 +2,12 @@ import React, { useRef } from 'react';
 
 import MovieCard from '../components/movie/MovieCard';
 import useMovies from '../hooks/useMovies';
+import dummyPoster from '../assets/Poster1.jpg';
 import { getTmdbImage } from '../utils/tmdbImages';
 
 function Movies() {
 
-  // =========================
   // MOVIE DATA
-  // =========================
 
   const {
     data,
@@ -21,18 +20,14 @@ function Movies() {
   const topRatedMovies = data?.topRated?.results || [];
   const nowPlayingMovies = data?.nowPlaying?.results || [];
 
-  // =========================
   // CAROUSEL REFS
-  // =========================
 
   const trendingRef = useRef(null);
   const popularRef = useRef(null);
   const topRatedRef = useRef(null);
   const nowPlayingRef = useRef(null);
 
-  // =========================
   // CAROUSEL
-  // =========================
 
   const scrollCarousel = (ref, direction) => {
 
@@ -43,9 +38,7 @@ function Movies() {
 
   };
 
-  // =========================
   // LOADING
-  // =========================
 
   if (loading) {
 
@@ -73,9 +66,7 @@ function Movies() {
 
   }
 
-  // =========================
   // ERROR
-  // =========================
 
   if (error) {
 
@@ -105,9 +96,7 @@ function Movies() {
 
   }
 
-  // =========================
   // EMPTY STATE
-  // =========================
 
   const hasMovies =
     trendingMovies.length > 0 ||
@@ -139,9 +128,7 @@ function Movies() {
 
   }
 
-  // =========================
   // MOVIE CARD
-  // =========================
 
  const renderMovieCard = (movie) => (
 
@@ -165,8 +152,9 @@ function Movies() {
       }
 
       poster={
-        getTmdbImage(movie.posterPath, 'w500') ||
-        '/dummyPoster.png'
+        movie.posterPath
+        ? getTmdbImage(movie.posterPath, 'w500')
+        : dummyPoster
       }
 
       type="Movie"

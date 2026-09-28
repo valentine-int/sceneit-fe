@@ -112,8 +112,9 @@ const renderSeriesCard = (series) => (
           : 'N/A'
       }
       poster={
-        getTmdbImage(series.posterPath, 'w500') ||
-        dummyPoster
+        series.posterPath
+        ? getTmdbImage(series.posterPath, 'w500')
+        : dummyPoster
       }
       type="Series"
     />
