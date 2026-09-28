@@ -855,16 +855,6 @@ function Navbar() {
 
               <div className="mt-5 flex items-center justify-between gap-3">
 
-                <NotificationBell />
-
-                <Button
-                  onClick={handleOpenReview}
-                  className="flex-1"
-                >
-                  <i className="ri-add-line text-base"></i>
-                  Review
-                </Button>
-
                 {!isLoading && user ? (
                   <Link
                     to="/profile"
@@ -888,6 +878,24 @@ function Navbar() {
                     </Button>
                   </Link>
                 ) : null}
+
+                <Button
+                  onClick={handleOpenReview}
+                  className="flex-1"
+                >
+                  <i className="ri-add-line text-base"></i>
+                  Review
+                </Button>
+
+                {!isLoading && user && (
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="text-sm font-medium text-[#93939A] transition-colors hover:text-[#F4F4F5]"
+                  >
+                    Log out
+                  </button>
+                )}
 
               </div>
 

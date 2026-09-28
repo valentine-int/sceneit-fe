@@ -105,7 +105,7 @@ function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-12 z-50 w-[min(360px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-[#27272A] bg-[#12141C] shadow-2xl">
+        <div className="fixed left-4 right-4 top-16 z-50 overflow-hidden rounded-xl border border-[#27272A] bg-[#12141C] shadow-2xl sm:absolute sm:left-auto sm:right-0 sm:top-12 sm:w-[360px]">
           <div className="flex items-center justify-between border-b border-[#27272A] px-4 py-3">
             <p className="text-sm font-semibold text-[#F4F4F5]">Notifications</p>
             {unreadCount > 0 && (
