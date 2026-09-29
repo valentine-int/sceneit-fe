@@ -24,11 +24,13 @@ export async function loginUser(data) {
 }
 
 export async function logoutUser() {
-  const result = await apiRequest('/api/auth/logout', {
-    method: 'POST',
-  });
-  localStorage.removeItem('token');
-  return result;
+  try {
+    await apiRequest('/api/auth/logout', { method: 'POST' });
+  } finally {
+    // Always clear token regardless of whether the API call succeeds,
+    // so the user is never stuck in a broken "logged-in" state.
+    localStorage.removeItem('token');
+  }
 }
 
 export function getCurrentUser() {
