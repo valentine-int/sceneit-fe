@@ -22,6 +22,14 @@ export function AuthProvider({ children }) {
 
     async function checkCurrentUser() {
 
+      // Skip network call entirely if there's no token — avoids noisy 401 on every
+      // fresh page load for logged-out users (both cookie-only & localStorage flows).
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
 
         const result = await getCurrentUser();
@@ -30,6 +38,8 @@ export function AuthProvider({ children }) {
 
       } catch (error) {
 
+        // Token exists but is invalid/expired — clean it up.
+        localStorage.removeItem('token');
         setUser(null);
 
       } finally {

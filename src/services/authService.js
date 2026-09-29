@@ -1,23 +1,34 @@
 import { apiRequest } from './api';
 
-export function registerUser(data) {
-  return apiRequest('/api/auth/register', {
+export async function registerUser(data) {
+  const result = await apiRequest('/api/auth/register', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  // Register auto-login: persist token so subsequent requests use header auth
+  if (result.token) {
+    localStorage.setItem('token', result.token);
+  }
+  return result;
 }
 
-export function loginUser(data) {
-  return apiRequest('/api/auth/login', {
+export async function loginUser(data) {
+  const result = await apiRequest('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  if (result.token) {
+    localStorage.setItem('token', result.token);
+  }
+  return result;
 }
 
-export function logoutUser() {
-  return apiRequest('/api/auth/logout', {
+export async function logoutUser() {
+  const result = await apiRequest('/api/auth/logout', {
     method: 'POST',
   });
+  localStorage.removeItem('token');
+  return result;
 }
 
 export function getCurrentUser() {
@@ -29,4 +40,4 @@ export function updateProfile(data) {
     method: 'PATCH',
     body: JSON.stringify(data),
   });
-}
+}
