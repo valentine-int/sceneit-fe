@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL;
+// In production: VITE_API_URL is empty → relative /api/* paths → Vercel proxy → Railway
+// In local dev: VITE_API_URL=http://localhost:4000 → direct to local BE
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('token');
