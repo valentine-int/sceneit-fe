@@ -1,6 +1,7 @@
-// In production: VITE_API_URL is empty → relative /api/* paths → Vercel proxy → Railway
-// In local dev: VITE_API_URL=http://localhost:4000 → direct to local BE
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+// Production build (Vercel): always use relative /api/* paths → goes through Vercel proxy
+// → Railway. Cookie is set on sceneit-fe.vercel.app (same domain) → Safari ITP safe.
+// Local dev: use VITE_API_URL=http://localhost:4000 → direct to local BE.
+const API_BASE_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_URL || '');
 
 export async function apiRequest(endpoint, options = {}) {
   const token = localStorage.getItem('token');
